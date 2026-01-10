@@ -57,6 +57,18 @@ export function useSpotifyData() {
 
     useEffect(() => {
         setIsMounted(true)
+
+        // [New] 탭 전환 후 복귀 시 싱크 강제 맞춤
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                console.log("👀 Tab active - Resetting sync state");
+                lastDisplayedProgress.current = 0; // 강제 리셋
+                correctionFactor.current = 1.0;
+                // 즉시 폴링 트리거 (선택사항)
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [])
 
     // 🔥 데이터 처리 로직 (SSE & Polling 공용)
@@ -98,49 +110,56 @@ export function useSpotifyData() {
             ? newData.lyrics
             : (isSongChange ? [] : oldData.lyrics);
 
-        const mergedData = { ...newData, lyrics: mergedLyrics };
+        // [Fix] 가사 상태 보존 (검색 중일 때 덮어쓰기 방지)
+        const mergedStatus = (newData.lyricsStatus === 'not_found' && oldData.lyricsStatus === 'searching' && !isSongChange)
+            ? 'searching' // 서버가 잠깐 not_found 보내도 클라이언트가 아직 기다리는 중이면 유지 (필요 시 로직 조정)
+            : newData.lyricsStatus || oldData.lyricsStatus;
 
-        // [Fix] 곡이 바뀌었더라도 newData에 가사가 있다면 즉시 반영 (딜레이 방지)
-        if (isSongChange) {
-            setData(mergedData);
-        } else {
-            if (!isFromSSE && !stateChanged && anchorDiff < 3000) {
-                setData(prev => ({ ...mergedData, progress: prev.progress }));
-            } else {
-                setData(mergedData);
-            }
-        }
+        const mergedData = { ...newData, lyrics: mergedLyrics, lyricsStatus: mergedStatus };
+
+        // [Fix] 곡이 바뀌었더라도 newData에 가사가 있다면 즉시 반영
+        // [Fix] 폴링 데이터 무시 로직 제거 (항상 최신 데이터 반영 시도)
+        setData(mergedData);
 
         // [Sync Optimization] 
-        // 노래 시작 부분(초반 5초)이거나 곡이 바뀌었을 때는 드리프트 보정 대신 즉시 점프(100ms만 차이나도 점프)
         const isNearStart = compensatedProgress < 5000;
-        const jumpThreshold = (isSongChange || isNearStart) ? 100 : 1000;
+        // [Tweaked] 점프 민감도 조정 (800ms)
+        const jumpThreshold = (isSongChange || isNearStart) ? 100 : 800;
 
-        const shouldHardJump = isSongChange || stateChanged || !newData.isPlaying || anchorDiff >= 1000 || absDiff > jumpThreshold;
+        // [Fix] 조건 단순화: 1초 이상 앵커 차이나거나, 실제 오차가 임계값 넘으면 무조건 점프
+        const shouldHardJump =
+            isSongChange ||
+            stateChanged ||
+            !newData.isPlaying ||
+            anchorDiff >= 1000 ||
+            absDiff > jumpThreshold;
 
         if (shouldHardJump) {
+            // console.log(`[Jump] Diff: ${Math.round(diff)}ms, AnchorDiff: ${Math.round(anchorDiff)}ms`);
             lastUpdateTimestamp.current = now;
             progressAtUpdate.current = compensatedProgress;
             correctionFactor.current = 1.0;
             setDebugSpeed(1.0);
 
-            // [Fix] 하드 점프(곡 이동, 설정 변경, 수동 탐색 등) 시에만 시각적 상태 업데이트
-            // 단, 서버 데이터가 너무 예전 것이라 뒤로 가는 경우라면, 현재 진행률이 서버보다 느려질 때까지 기다림
-            const isSongChange = oldData.trackId !== newData.trackId;
+            // [Fix] 하드 점프 시 조건 없이 UI 업데이트 (탭 복귀 시 즉시 반영 위해)
+            // 단, 너무 과거의 데이터로 돌아가는 '역주행'만 방지
             const isForwardJump = compensatedProgress >= lastDisplayedProgress.current;
-            const isSignificantSeek = Math.abs(diff) > 5000; // 5초 이상의 수동 탐색은 항상 허용
+            const isSignificantJump = Math.abs(diff) > 2000; // 2초 이상 차이면 뒤로 가더라도 허용 (구간 반복 등)
 
-            if (isSongChange || isForwardJump || isSignificantSeek) {
+            if (isSongChange || isForwardJump || isSignificantJump) {
                 lastDisplayedProgress.current = compensatedProgress;
                 setCurrentProgress(compensatedProgress);
             }
         } else {
+            // [Soft Correction] 배속 재생으로 따라잡기
             if (absDiff < 50) {
                 correctionFactor.current = 1.0;
             } else {
-                const pGain = 0.00005;
+                // P-Controller Gain
+                const pGain = 0.0001; // 조금 더 부드럽게
                 let adjustment = diff * pGain;
-                adjustment = Math.max(-0.05, Math.min(0.05, adjustment));
+                // 최대 10% 속도 조절로 제한
+                adjustment = Math.max(-0.1, Math.min(0.1, adjustment));
                 correctionFactor.current = 1.0 + adjustment;
             }
             setDebugSpeed(correctionFactor.current);

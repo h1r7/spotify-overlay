@@ -245,7 +245,11 @@ export async function POST(request: Request) {
 
         // 새 노래 vs 기존 노래
         if (currentTrackId !== lastSearchedTrackId) {
-            await handleNewTrack(newData, currentTrackId, receivedTimestamp, networkDelay);
+            // [Fix] 가사 검색이 응답을 블로킹하지 않도록 비동기 처리 (await 제거)
+            // 단, 기본적인 메타데이터 업데이트는 보장해야 하므로 handleNewTrack 내부에서 처리 분리
+            handleNewTrack(newData, currentTrackId, receivedTimestamp, networkDelay).catch(err => {
+                console.error("Async track processing error:", err);
+            });
         } else {
             handleExistingTrack(newData, currentTrackId, receivedTimestamp, networkDelay);
         }
