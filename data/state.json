@@ -1,0 +1,20 @@
+{
+  "widgetStyle": "album",
+  "lyricsStyle": "album",
+  "animationStyle": "fade",
+  "customColors": {
+    "widgetBg": "#d7d7fe",
+    "lyricsBg": "#000000",
+    "simpleWidgetBg": "#18181b",
+    "squareWidgetBg": "#18181b"
+  },
+  "simpleWidgetStyle": "album",
+  "lyricsOffset": 0,
+  "interactiveProgress": true,
+  "pageBackgroundStyle": "album",
+  "pageBackgroundColor": "#000000",
+  "lyricsBounceEffect": true,
+  "lyricsBounceAmount": 5,
+  "showWrapVisualizer": true,
+  "squareWidgetStyle": "album"
+}
