@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google"; // 폰트 변경
+import { Plus_Jakarta_Sans } from "next/font/google"; // Using Plus Jakarta Sans font
 import "./globals.css";
 import { SettingsProvider } from "../context/SettingsContext";
 import GlobalBackground from "../components/GlobalBackground";
 
-// 스포티파이와 가장 비슷한 무료 폰트
+// Premium font similar to Spotify's branding
 const font = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="en">
       <body className={font.className}>
         <SettingsProvider>
           <GlobalBackground />

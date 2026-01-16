@@ -17,10 +17,10 @@ function LyricsWidget({ data, currentProgress, noBackground }: LyricsWidgetProps
 
     if (!data) return null;
 
-    // 활성 가사 찾기
+    // Find active lyric line
     const activeLyricIndex = useMemo(() => {
         if (!data.lyrics || data.lyrics.length === 0) return -1;
-        // [Predictive] 100ms 미리 보기를 더해 강조 시점을 앞당김
+        // [Predictive] Add 100ms lookahead to highlight lyrics slightly early
         const predictiveProgress = currentProgress + 100;
         const index = [...data.lyrics].reverse().findIndex(l => predictiveProgress >= l.time);
         return index === -1 ? -1 : data.lyrics.length - 1 - index;
@@ -33,7 +33,7 @@ function LyricsWidget({ data, currentProgress, noBackground }: LyricsWidgetProps
     useEffect(() => {
         if (data.trackId && data.trackId !== lastTrackId.current) {
             itemRefs.current = [];
-            // 트랙이 바뀔 때만 즉시 중앙(250)으로 리셋
+            // Reset to center (250) only when track changes
             setTranslateY(250);
             lastTrackId.current = data.trackId;
         }
@@ -60,7 +60,7 @@ function LyricsWidget({ data, currentProgress, noBackground }: LyricsWidgetProps
                 style={{ backgroundColor: noBackground ? 'transparent' : containerBg }}
             >
 
-                {/* 앨범 아트는 가사창 내부에만 존재하도록 완전 독립 */}
+                {/* Independent background for lyrics window */}
                 {settings.lyricsStyle === 'album' && dominantColor && !noBackground && (
                     <div className="absolute inset-0 z-0 overflow-hidden rounded-3xl">
                         <div

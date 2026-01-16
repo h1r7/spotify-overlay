@@ -11,7 +11,7 @@ export async function GET() {
 
     const stream = new ReadableStream({
         start(controller) {
-            // 1. 데이터 전송 함수
+            // 1. Data transmission function
             sendData = (data: any) => {
                 try {
                     const message = `data: ${JSON.stringify(data)}\n\n`;
@@ -27,10 +27,10 @@ export async function GET() {
                 try { controller.close(); } catch (e) { }
             }
 
-            // 2. 이벤트 리스너 등록
+            // 2. Register event listener
             eventEmitter.on('update', sendData);
 
-            // 3. 연결 유지용 핑 (15초) - 브라우저 연결 끊김 방지
+            // 3. Keep-alive ping (15s) - Prevents browser connection timeout
             interval = setInterval(() => {
                 try {
                     controller.enqueue(encoder.encode(': ping\n\n'));
@@ -49,7 +49,7 @@ export async function GET() {
         headers: {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache, no-transform',
-            'X-Accel-Buffering': 'no', // Nginx 등 프록시 대응
+            'X-Accel-Buffering': 'no', // For proxy support (Nginx, etc.)
         },
     });
 }

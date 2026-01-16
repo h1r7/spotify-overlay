@@ -7,7 +7,7 @@ import { useSettings } from "../../context/SettingsContext"
 import DisconnectedNotice from "../../components/DisconnectedNotice"
 
 /**
- * 정사각형 위젯 전용 페이지 (/square)
+ * Square Widget Page (/square)
  */
 export default function SquarePage() {
     const { data, serverSettings, isDisconnected } = useSpotifyData()
@@ -16,12 +16,12 @@ export default function SquarePage() {
     const [showToast, setShowToast] = useState(false)
     const lastSyncedSettingsRef = useRef<string>("")
 
-    // 서버 설정 동기화
+    // Sync server settings
     useEffect(() => {
         if (serverSettings) {
             const settingsString = JSON.stringify(serverSettings);
 
-            // 처음 로딩이 아니고 실제로 설정이 바뀌었을 때만 토스트 표시
+            // Show toast only if settings actually changed (ignore initial load)
             if (lastSyncedSettingsRef.current && lastSyncedSettingsRef.current !== settingsString) {
                 setShowToast(true);
                 setTimeout(() => setShowToast(false), 2000);
@@ -35,10 +35,10 @@ export default function SquarePage() {
     return (
         <div className="min-h-screen bg-transparent flex items-start p-8 relative">
             {isDisconnected && <DisconnectedNotice />}
-            {/* 설정 적용 알림 */}
+            {/* Sync Status Notification */}
             {showToast && (
                 <div className="fixed top-4 left-4 z-[100] bg-white/5 backdrop-blur-md border border-white/10 text-white/40 px-3 py-1 rounded-full text-[10px] font-bold animate-in fade-in slide-in-from-left-2 duration-700">
-                    싱크 완료
+                    Synced
                 </div>
             )}
             <SquareWidget data={data} />

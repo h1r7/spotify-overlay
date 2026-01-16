@@ -11,8 +11,8 @@ interface SimpleWidgetProps {
 }
 
 /**
- * 심플 위젯 컴포넌트
- * OBS 방송용으로 최적화된 컴팩트한 레이아웃 (가로형)
+ * Simple Widget Component
+ * Compact horizontal layout optimized for OBS broadcasting
  */
 const SimpleWidget: React.FC<SimpleWidgetProps> = ({ data }) => {
     const { dominantColor, accentColor } = useTheme(data.cover);
@@ -20,7 +20,7 @@ const SimpleWidget: React.FC<SimpleWidgetProps> = ({ data }) => {
     const [imgError, setImgError] = React.useState(false);
     const [imgRetryCount, setImgRetryCount] = React.useState(0);
 
-    // 트랙 변경 시 에러 상태 초기화
+    // Reset error state on track change
     React.useEffect(() => {
         setImgError(false);
         setImgRetryCount(0);
@@ -36,12 +36,12 @@ const SimpleWidget: React.FC<SimpleWidgetProps> = ({ data }) => {
         <div
             className="relative flex items-center gap-4 p-4 pr-6 rounded-3xl transition-all duration-1000 overflow-hidden max-w-[450px] shadow-2xl group border border-white/20"
         >
-            {/* 3. Wrap Visualizer around the widget */}
+            {/* Wrap Visualizer Around Widget */}
             {settings.showWrapVisualizer && (
                 <Visualizer type="wrap" isPlaying={data.isPlaying} color={widgetAccent} />
             )}
 
-            {/* 전체 배경 레이어 (앨범 아트 블러 또는 커스텀 색상) */}
+            {/* Background Layer (Album Art Blur or Custom Color) */}
             <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                 {isCustom || !data.cover || imgError ? (
                     <div
@@ -59,19 +59,19 @@ const SimpleWidget: React.FC<SimpleWidgetProps> = ({ data }) => {
                         <div className="absolute inset-0 bg-black/30" />
                     </div>
                 )}
-                {/* 하이라이트 글로우 */}
+                {/* Highlight Glow */}
                 <div
                     className="absolute -inset-[50%] opacity-20 blur-3xl rounded-full transition-colors duration-1000"
                     style={{ backgroundColor: widgetAccent }}
                 />
             </div>
 
-            {/* 유리 질감 오버레이 */}
+            {/* Glass Texture Overlay */}
             <div className="absolute inset-0 z-0 backdrop-blur-md bg-zinc-950/20" />
 
-            {/* 컨텐츠 레이어 */}
+            {/* Content Layer */}
             <div className="relative z-10 flex items-center gap-4 w-full">
-                {/* 앨범 커버 */}
+                {/* Album Cover */}
                 <div className="relative w-20 h-20 flex-shrink-0">
                     {data.cover && !imgError ? (
                         <img
@@ -94,7 +94,7 @@ const SimpleWidget: React.FC<SimpleWidgetProps> = ({ data }) => {
                     )}
                 </div>
 
-                {/* 노래 정보 */}
+                {/* Track Info */}
                 <div className="flex flex-col min-w-0 flex-grow py-1">
                     <h1 className="text-xl font-black text-white truncate leading-tight tracking-tight drop-shadow-md">
                         {data.title}
@@ -104,7 +104,7 @@ const SimpleWidget: React.FC<SimpleWidgetProps> = ({ data }) => {
                     </p>
                 </div>
 
-                {/* 재생 상태 아이콘 */}
+                {/* Playback Status Icon */}
                 <div className="flex-shrink-0 ml-2">
                     {data.isPlaying ? (
                         <div className="relative w-10 h-10 flex items-center justify-center">

@@ -13,28 +13,28 @@ export default function PageBackgroundSettings({
 }: PageBackgroundSettingsProps) {
     return (
         <div className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5 space-y-6">
-            <h2 className="text-xl font-bold">페이지 배경 설정</h2>
+            <h2 className="text-xl font-bold">Page Background Settings</h2>
             <div className="space-y-3">
-                <label className="text-sm text-zinc-400 font-bold uppercase tracking-wider">전체 배경 모드</label>
+                <label className="text-sm text-zinc-400 font-bold uppercase tracking-wider">Full Background Mode</label>
                 <div className="flex bg-zinc-950 rounded-lg p-1">
                     <button
                         onClick={() => setDraftPageBgStyle('album')}
                         className={`flex-1 py-2 rounded-md text-sm font-medium transition ${draftPageBgStyle === 'album' ? 'bg-green-600 text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}
                     >
-                        앨범 아트 (블러)
+                        Album Art (Blur)
                     </button>
                     <button
                         onClick={() => setDraftPageBgStyle('custom')}
                         className={`flex-1 py-2 rounded-md text-sm font-medium transition ${draftPageBgStyle === 'custom' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}
                     >
-                        커스텀 색상
+                        Custom Color
                     </button>
                 </div>
             </div>
 
             {draftPageBgStyle === 'custom' && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                    <label className="text-sm text-zinc-400 font-bold uppercase tracking-wider">배경색 선택</label>
+                    <label className="text-sm text-zinc-400 font-bold uppercase tracking-wider">Select Background Color</label>
                     <div className="flex gap-3">
                         <input
                             type="color"

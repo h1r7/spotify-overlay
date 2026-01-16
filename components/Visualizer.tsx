@@ -41,14 +41,14 @@ const Visualizer: React.FC<VisualizerProps> = ({ type, isPlaying, color }) => {
             }
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Ultra-slow base speed for premium atmosphere
+            // Smooth premium rotation speed
             offset += 0.04;
 
             if (type === 'wrap') {
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2;
 
-                // Ultra-slow rotation for premium atmosphere
+                // Subtle rotation for premium feel
                 const rotation = offset * 0.1;
 
                 // Create a rotating gradient for the "RGB Chase" effect

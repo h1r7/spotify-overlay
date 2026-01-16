@@ -8,7 +8,7 @@ import { useSettings } from "../../context/SettingsContext"
 import DisconnectedNotice from "../../components/DisconnectedNotice"
 
 /**
- * 풀 위젯 페이지 (가장 완성도 높은 전체 구성)
+ * Full Widget Page (Most complete layout)
  * Song Info + Lyrics + Chat Box Placeholder
  */
 export default function FullPage() {
@@ -18,12 +18,12 @@ export default function FullPage() {
     const [showToast, setShowToast] = useState(false)
     const lastSyncedSettingsRef = useRef<string>("")
 
-    // 서버 설정 동기화
+    // Sync server settings
     useEffect(() => {
         if (serverSettings) {
             const settingsString = JSON.stringify(serverSettings);
 
-            // 처음 로딩이 아니고 실제로 설정이 바뀌었을 때만 토스트 표시
+            // Show toast only if settings actually changed (ignore initial load)
             if (lastSyncedSettingsRef.current && lastSyncedSettingsRef.current !== settingsString) {
                 setShowToast(true);
                 setTimeout(() => setShowToast(false), 2000);
@@ -39,10 +39,10 @@ export default function FullPage() {
             {/* Server Disconnected Notice */}
             {isDisconnected && <DisconnectedNotice />}
 
-            {/* 설정 적용 알림 (좌측 상단, 연하게) */}
+            {/* Sync Status Notification (Top-left, subtle) */}
             {showToast && (
                 <div className="fixed top-4 left-4 z-[100] bg-white/5 backdrop-blur-md border border-white/10 text-white/40 px-3 py-1 rounded-full text-[10px] font-bold animate-in fade-in slide-in-from-left-2 duration-700">
-                    심크 완료
+                    Synced
                 </div>
             )}
             <div className="relative z-10 flex items-center justify-center gap-12">

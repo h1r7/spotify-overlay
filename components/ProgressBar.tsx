@@ -14,14 +14,14 @@ function ProgressBar({ current, total, color, isPlaying = false }: ProgressBarPr
 
     const isInteractive = settings.interactiveProgress;
 
-    // 색상에서 명도 추출 (R,G,B 문자열 형태라고 가정)
+    // Extract brightness from color (assumes R,G,B string format)
     const [r, g, b] = color.includes(',') ? color.split(',').map(c => parseInt(c.trim())) : [255, 255, 255];
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     const isLightColor = luminance > 0.7;
 
     return (
         <div className="relative w-full mt-4 mb-2">
-            {/* 2. Progress Bar Container */}
+            {/* Progress Bar Container */}
             <div className={`relative w-full h-2 rounded-full overflow-hidden shadow-inner transition-all duration-500 ${isInteractive ? 'h-3' : 'h-2'} ${isLightColor ? 'bg-black/20 border border-black/5' : 'bg-white/10 border border-white/5'}`}>
                 {/* Main Progress Fill */}
                 <div

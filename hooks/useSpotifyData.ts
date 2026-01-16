@@ -19,11 +19,11 @@ export interface NowPlayingData {
     lyricsStatus?: 'ok' | 'searching' | 'not_found'
     trackId?: string
     networkDelay?: number
-    settings?: any // 서버에서 전달하는 설정
+    settings?: any // Server-provided settings
 }
 
-const BASE_SYNC_OFFSET = 300; // 기본 오프셋
-const CLIENT_SIDE_BUFFER = 150; // [NEW] 미리 반응하기 위한 안전 마진 (ms)
+const BASE_SYNC_OFFSET = 300; // Default offset
+const CLIENT_SIDE_BUFFER = 150; // [NEW] Safety margin for proactive response (ms)
 const POLLING_INTERVAL = 500;
 
 export function useSpotifyData() {
@@ -49,35 +49,35 @@ export function useSpotifyData() {
     const progressAtUpdate = useRef<number>(0)
     const animationFrameRef = useRef<number>(0)
     const correctionFactor = useRef<number>(1.0)
-    const lastDisplayedProgress = useRef<number>(0) // 뒤로 점프 방지용
-    const networkDelayRef = useRef<number>(BASE_SYNC_OFFSET) // 네트워크 지연 (자동 계산)
+    const lastDisplayedProgress = useRef<number>(0) // Prevent backward jumps
+    const networkDelayRef = useRef<number>(BASE_SYNC_OFFSET) // Network delay (auto-calculated)
 
-    // 🔥 클로저 문제 해결을 위한 Ref (SSE/Polling 콜백에서 최신 data 접근용)
+    // Ref to solve closure issues (access latest data in SSE/Polling callbacks)
     const dataRef = useRef(data);
     useEffect(() => { dataRef.current = data; }, [data]);
 
     useEffect(() => {
         setIsMounted(true)
 
-        // [New] 탭 전환 후 복귀 시 싱크 강제 맞춤
+        // [New] Force sync reset when returning from tab switch
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
                 console.log("👀 Tab active - Resetting sync state");
-                lastDisplayedProgress.current = 0; // 강제 리셋
+                lastDisplayedProgress.current = 0; // Force reset
                 correctionFactor.current = 1.0;
-                // 즉시 폴링 트리거 (선택사항)
+                // Trigger immediate polling (optional)
             }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [])
 
-    // 🔥 데이터 처리 로직 (SSE & Polling 공용)
+    // Data processing logic (Common for SSE & Polling)
     const processUpdate = (newData: NowPlayingData, isFromSSE: boolean) => {
         const now = Date.now();
         const compensatedProgress = newData.progress;
 
-        // 🔥 네트워크 지연 자동 업데이트
+        // Auto-update network delay
         if (newData.networkDelay && newData.networkDelay > 0) {
             networkDelayRef.current = newData.networkDelay;
         }
@@ -86,20 +86,20 @@ export function useSpotifyData() {
         const isSongChange = oldData.trackId !== newData.trackId;
         const stateChanged = oldData.isPlaying !== newData.isPlaying;
 
-        // 현재 로컬 예상 시간
+        // Current local expected time
         const timePassed = now - lastUpdateTimestamp.current;
         const currentExpected = progressAtUpdate.current + (timePassed * correctionFactor.current);
 
-        // 오차 계산
+        // Calculate drift
         const diff = compensatedProgress - currentExpected;
         const absDiff = Math.abs(diff);
 
-        // [Stabilization] 앵커 차이 임계값 상향 (네트워크 지터 대응)
+        // [Stabilization] Increase anchor difference threshold (Handle network jitter)
         const currentAnchor = lastUpdateTimestamp.current - progressAtUpdate.current;
         const newAnchor = now - compensatedProgress;
         const anchorDiff = Math.abs(currentAnchor - newAnchor);
 
-        // 🔥 설정 업데이트 처리
+        // Handle settings update
         if (newData.settings) {
             setServerSettings((prev: any) => {
                 if (JSON.stringify(prev) === JSON.stringify(newData.settings)) return prev;
@@ -111,25 +111,25 @@ export function useSpotifyData() {
             ? newData.lyrics
             : (isSongChange ? [] : oldData.lyrics);
 
-        // [Fix] 가사 상태 보존 (검색 중일 때 덮어쓰기 방지)
-        // [Update] 서버가 명시적으로 'not_found'를 보냈다면 즉시 반영하도록 수정
+        // [Fix] Preserve lyrics status (prevent overwrite while searching)
+        // [Update] If server explicitly sends 'not_found', apply immediately
         const mergedStatus = (newData.lyricsStatus === 'not_found' && oldData.lyricsStatus === 'searching' && !isSongChange)
-            ? 'not_found' // 강제로 searching으로 되돌리지 않고 서버의 최종 판단을 따름
+            ? 'not_found' // Follow server's final decision instead of forcing back to searching
             : newData.lyricsStatus || oldData.lyricsStatus;
 
         const mergedData = { ...newData, lyrics: mergedLyrics, lyricsStatus: mergedStatus };
 
-        // [Fix] 곡이 바뀌었더라도 newData에 가사가 있다면 즉시 반영
-        // [Fix] 폴링 데이터 무시 로직 제거 (항상 최신 데이터 반영 시도)
+        // [Fix] Apply immediately if newData has lyrics even if song changed
+        // [Fix] Remove logic acting on polling data (always try to reflect latest data)
         setData(mergedData);
 
         // [Sync Optimization] 
         const isNearStart = compensatedProgress < 5000;
-        // [Tweaked] 점프 민감도 조정 (800ms)
+        // [Tweaked] Adjust jump sensitivity (800ms)
         const jumpThreshold = (isSongChange || isNearStart) ? 100 : 800;
 
-        // [Fix] 조건 단순화: 1초 이상 앵커 차이나거나, 실제 오차가 임계값 넘으면 무조건 점프
-        // Threshold를 800 -> 1200으로 상향하여 잦은 점프 방지
+        // [Fix] Simplify condition: Hard jump if anchor diff > 1s or actual drift exceeds threshold
+        // Increased threshold 800 -> 1200 to prevent frequent jumps
         const shouldHardJump =
             isSongChange ||
             stateChanged ||
@@ -144,24 +144,24 @@ export function useSpotifyData() {
             correctionFactor.current = 1.0;
             setDebugSpeed(1.0);
 
-            // [Fix] 하드 점프 시 조건 없이 UI 업데이트 (탭 복귀 시 즉시 반영 위해)
-            // 단, 너무 과거의 데이터로 돌아가는 '역주행'만 방지
+            // [Fix] Update UI unconditionally on hard jump (for immediate reflection on tab return)
+            // But prevent 'reverse jump' to too old data
             const isForwardJump = compensatedProgress >= lastDisplayedProgress.current;
-            const isSignificantJump = Math.abs(diff) > 2000; // 2초 이상 차이면 뒤로 가더라도 허용 (구간 반복 등)
+            const isSignificantJump = Math.abs(diff) > 2000; // Allow backward jump if diff > 2s (e.g. seeking)
 
             if (isSongChange || isForwardJump || isSignificantJump) {
                 lastDisplayedProgress.current = compensatedProgress;
                 setCurrentProgress(compensatedProgress);
             }
         } else {
-            // [Soft Correction] 배속 재생으로 따라잡기
+            // [Soft Correction] Catch up via speed adjustment
             if (absDiff < 50) {
                 correctionFactor.current = 1.0;
             } else {
                 // P-Controller Gain
-                const pGain = 0.0001; // 조금 더 부드럽게
+                const pGain = 0.0001; // Slightly smoother
                 let adjustment = diff * pGain;
-                // 최대 10% 속도 조절로 제한
+                // Limit speed adjustment to max 10%
                 adjustment = Math.max(-0.1, Math.min(0.1, adjustment));
                 correctionFactor.current = 1.0 + adjustment;
             }
@@ -169,7 +169,7 @@ export function useSpotifyData() {
         }
     };
 
-    // 1. SSE 연결 (실시간 이벤트 수신)
+    // 1. SSE Connection (Receive real-time events)
     useEffect(() => {
         if (!isMounted) return
         const eventSource = new EventSource('/events')
@@ -184,7 +184,7 @@ export function useSpotifyData() {
         eventSource.onerror = () => {
             setIsDisconnected(true);
             eventSource.close();
-            // 재연결 시도 (5초 후)
+            // Retry connection (after 5s)
             setTimeout(() => {
                 if (isMounted) setIsMounted(false);
                 setTimeout(() => setIsMounted(true), 100);
@@ -193,7 +193,7 @@ export function useSpotifyData() {
         return () => eventSource.close()
     }, [isMounted])
 
-    // 2. 폴링 (드리프트 보정)
+    // 2. Polling (Drift correction)
     useEffect(() => {
         if (!isMounted) return
         const fetchData = async () => {
@@ -207,9 +207,9 @@ export function useSpotifyData() {
         return () => clearInterval(interval)
     }, [isMounted])
 
-    // 로컬 타이머 (requestAnimationFrame)
+    // Local timer (requestAnimationFrame)
     useEffect(() => {
-        // [Fix] 정지 상태일 때는 애니메이션 루프를 돌리지 않음 (CPU 절약 및 루프 방지)
+        // [Fix] Do not run animation loop when paused (Save CPU and prevent loop)
         if (!data.isPlaying) {
             setCurrentProgress(progressAtUpdate.current);
             return;
@@ -219,9 +219,9 @@ export function useSpotifyData() {
             const now = Date.now();
             const timePassed = now - lastUpdateTimestamp.current;
 
-            // 현재 속도(correctionFactor)를 반영하여 진행 시간 계산
-            // networkDelayRef: 백엔드에서 자동 계산된 지연 시간 사용
-            // settings.lyricsOffset: 사용자가 수동으로 설정한 오프셋
+            // Calculate progress reflecting current speed (correctionFactor)
+            // networkDelayRef: Use auto-calculated delay from backend
+            // settings.lyricsOffset: User manually configured offset
             const userOffset = serverSettings?.lyricsOffset || 0;
             const estimated = Math.max(0,
                 progressAtUpdate.current +
@@ -232,8 +232,8 @@ export function useSpotifyData() {
             );
             const finalProgress = data.duration > 0 ? Math.min(estimated, data.duration) : estimated;
 
-            // [Fix] 미세한 역주행 방지 (로컬 예상 시간 오차 방지)
-            // 지연된 서버 데이터가 도착하더라도, 실제 표시되는 바는 항상 이전보다 앞서야 함
+            // [Fix] Prevent micro reverse jumps (Local estimation error prevention)
+            // Even if delayed server data arrives, the displayed bar must always move forward
             if (finalProgress > lastDisplayedProgress.current) {
                 lastDisplayedProgress.current = finalProgress;
                 setCurrentProgress(finalProgress);

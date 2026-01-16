@@ -6,15 +6,15 @@ import { useSpotifyData } from '../hooks/useSpotifyData'
 import { useTheme } from '../hooks/useTheme'
 
 /**
- * 전역 배경 컴포넌트
- * useTheme 훅을 사용하여 일관된 배경색을 렌더링합니다.
+ * Global Background Component
+ * Renders a consistent background color using the useTheme hook.
  */
 export default function GlobalBackground() {
     const pathname = usePathname()
     const { data } = useSpotifyData()
     const { globalBg, isAlbumMode } = useTheme(data.cover)
 
-    // 가사만 있거나 위젯만 있는 페이지에서는 전역 배경을 숨깁니다 (OBS 투명 레이어용)
+    // Hide global background on pages that only have lyrics or widgets (for OBS transparent layers)
     const isTransparentPage = ['/simple', '/square', '/widget', '/lyrics'].includes(pathname)
     if (isTransparentPage) return null
 

@@ -22,26 +22,26 @@ function SongInfoWidget({ data, currentProgress, noBackground, debugSpeed }: Son
     const [prevCover, setPrevCover] = useState<string | null>(data.cover || null);
     const [isTransitioning, setIsTransitioning] = useState(false);
 
-    // 노래가 실제로 바뀌었는지 추적 (settings 변경과 구분)
+    // Track if the song actually changed (distinct from settings updates)
     const lastTrackIdRef = React.useRef<string | undefined>(data.trackId);
     const [songChanged, setSongChanged] = useState(false);
 
-    // 트랙 변경 감지 (settings 변경과 분리)
+    // Detect track change (separate from settings changes)
     useEffect(() => {
         if (data.trackId !== lastTrackIdRef.current) {
             lastTrackIdRef.current = data.trackId;
             setSongChanged(true);
-            // 애니메이션 후 리셋
+            // Reset after animation
             const timer = setTimeout(() => setSongChanged(false), 1500);
             return () => clearTimeout(timer);
         }
     }, [data.trackId]);
 
-    // 앨범 커버 전환 효과 - 실제 커버 URL이 바뀌었을 때만 적용
+    // Album cover transition effect - only applied when cover URL changes
     useEffect(() => {
         setImgError(false);
         setImgRetryCount(0);
-        // Track ID가 바뀌었거나 Cover URL이 바뀐 경우에만 transition 트리거
+        // Trigger transition only if Track ID or Cover URL changed
         if (settings.animationStyle === 'fade' && data.cover && data.cover !== prevCover) {
             setIsTransitioning(true);
             const timer = setTimeout(() => {
@@ -50,7 +50,7 @@ function SongInfoWidget({ data, currentProgress, noBackground, debugSpeed }: Son
             }, 1000);
             return () => clearTimeout(timer);
         } else if (data.cover !== prevCover) {
-            // 그 외 설정 변경 등에서는 즉시 업데이트하여 깜빡임 방지
+            // Immediate update for settings changes to prevent flickering
             setPrevCover(data.cover);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,7 +80,7 @@ function SongInfoWidget({ data, currentProgress, noBackground, debugSpeed }: Son
                         : (isCustom ? bgColor : 'rgba(24, 24, 27, 0.85)')
                 }}
             >
-                {/* 3. Wrap Visualizer around the widget */}
+                {/* Wrap Visualizer Around Widget */}
                 {settings.showWrapVisualizer && !noBackground && (
                     <Visualizer type="wrap" isPlaying={data.isPlaying} color={`rgb(${dominantColor})`} />
                 )}
@@ -131,7 +131,7 @@ function SongInfoWidget({ data, currentProgress, noBackground, debugSpeed }: Son
                     </div>
 
                     <div className="space-y-4 mb-4 w-full h-24 flex flex-col justify-center">
-                        {/* key를 trackId로 변경하고, songChanged일 때만 애니메이션 적용 */}
+                        {/* Use trackId as key, apply animation only on song change */}
                         <div key={data.trackId} className={(isFade && songChanged) ? "animate-in fade-in slide-in-from-bottom-4 duration-700" : ""}>
                             <h1 className="text-3xl font-black tracking-tighter text-white drop-shadow-lg line-clamp-2 leading-tight">{data.title}</h1>
                             <p className="text-xl font-medium text-white/80 truncate w-full block mt-1">{data.artist}</p>

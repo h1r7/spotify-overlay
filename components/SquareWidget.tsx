@@ -11,8 +11,8 @@ interface SquareWidgetProps {
 }
 
 /**
- * 정사각형 위젯 컴포넌트
- * OBS 방송용으로 최적화된 컴팩트한 정사각형 레이아웃
+ * Square Widget Component
+ * Compact square layout optimized for OBS broadcasting
  */
 const SquareWidget: React.FC<SquareWidgetProps> = ({ data }) => {
     const { dominantColor, accentColor } = useTheme(data.cover);
@@ -20,7 +20,7 @@ const SquareWidget: React.FC<SquareWidgetProps> = ({ data }) => {
     const [imgError, setImgError] = React.useState(false);
     const [imgRetryCount, setImgRetryCount] = React.useState(0);
 
-    // 트랙 변경 시 에러 상태 초기화
+    // Reset error state on track change
     React.useEffect(() => {
         setImgError(false);
         setImgRetryCount(0);
@@ -41,7 +41,7 @@ const SquareWidget: React.FC<SquareWidgetProps> = ({ data }) => {
                 <Visualizer type="wrap" isPlaying={data.isPlaying} color={widgetAccent} />
             )}
 
-            {/* 전체 배경 레이어 (앨범 아트 블러 또는 커스텀 색상) */}
+            {/* Background Layer (Album Art Blur or Custom Color) */}
             <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                 {isCustom || !data.cover || imgError ? (
                     <div
@@ -59,23 +59,23 @@ const SquareWidget: React.FC<SquareWidgetProps> = ({ data }) => {
                         <div className="absolute inset-0 bg-black/50" />
                     </div>
                 )}
-                {/* 하이라이트 글로우 */}
+                {/* Highlight Glow */}
                 <div
                     className="absolute -inset-[50%] opacity-40 blur-[100px] rounded-full transition-colors duration-1000"
                     style={{ backgroundColor: widgetAccent }}
                 />
             </div>
 
-            {/* 유리 질감 오버레이 */}
+            {/* Glass Texture Overlay */}
             <div className={`absolute inset-0 z-0 backdrop-blur-2xl ${isCustom ? 'bg-black/30' : 'bg-zinc-950/40'}`} />
 
-            {/* 상단: 곡 정보 */}
+            {/* Header: Track Info */}
             <div className="relative z-10 flex flex-col items-center text-center w-full gap-5">
-                {/* 앨범 커버 */}
+                {/* Album Cover */}
                 <div className="relative w-36 h-36 flex-shrink-0 group-hover:scale-105 transition-transform duration-700 ease-out">
                     {data.cover && !imgError ? (
                         <div className="relative">
-                            {/* 재생 중일 때 커버 뒤에 퍼지는 효과 */}
+                            {/* Pulse effect behind cover when playing */}
                             {data.isPlaying && (
                                 <div
                                     className="absolute -inset-3 rounded-3xl animate-pulse opacity-50 blur-xl"
@@ -103,7 +103,7 @@ const SquareWidget: React.FC<SquareWidgetProps> = ({ data }) => {
                     )}
                 </div>
 
-                {/* 노래 정보 */}
+                {/* Track Details */}
                 <div className="flex flex-col items-center min-w-0 w-full px-2">
                     <h1 className="text-xl font-black text-white w-full truncate leading-tight tracking-tight drop-shadow-2xl">
                         {data.title}
@@ -114,7 +114,7 @@ const SquareWidget: React.FC<SquareWidgetProps> = ({ data }) => {
                 </div>
             </div>
 
-            {/* 하단: 장식용 컨트롤러 */}
+            {/* Footer: Decorative Controller */}
             <div className="relative z-10 flex items-center justify-center gap-8 w-full mt-auto pb-2">
                 {/* Previous Button (Decorative) */}
                 <div className="text-white/30 hover:text-white/60 transition-colors cursor-default transform hover:scale-110">
@@ -150,14 +150,14 @@ const SquareWidget: React.FC<SquareWidgetProps> = ({ data }) => {
                 </div>
             </div>
 
-            {/* 장식용 진행선 (하단 아주 얇게) */}
+            {/* Decorative Progress Line (Very thin at the bottom) */}
             {data.isPlaying && (
                 <div className="absolute bottom-0 left-0 h-1 w-full overflow-hidden bg-white/10">
                     <div
                         className="h-full animate-pulse"
                         style={{
                             backgroundColor: widgetAccent,
-                            width: '40%', // 예시 장식용
+                            width: '40%', // Decorative placeholder
                             boxShadow: `0 0 10px ${widgetAccent}`
                         }}
                     />

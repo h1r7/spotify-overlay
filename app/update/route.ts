@@ -8,7 +8,7 @@ import {
 import fs from 'fs';
 import path from 'path';
 
-// --- 설정 파일 경로 ---
+// --- Settings File Path ---
 const SETTINGS_DIR = path.join(process.cwd(), 'data');
 const SETTINGS_FILE = path.join(SETTINGS_DIR, 'state.json');
 
@@ -35,7 +35,7 @@ function loadSettings() {
     return null;
 }
 
-// --- 기본 설정 ---
+// --- Default Settings ---
 const DEFAULT_SETTINGS = {
     widgetStyle: 'album',
     lyricsStyle: 'album',
@@ -55,7 +55,7 @@ const DEFAULT_SETTINGS = {
     interactiveProgress: false
 };
 
-// --- 서버 메모리 저장소 ---
+// --- Server Memory Store ---
 const savedSettings = loadSettings();
 
 let currentData: any = {
@@ -77,11 +77,11 @@ let currentData: any = {
 
 let lastSearchedTrackId = "";
 
-// --- 헬퍼 함수 ---
+// --- Helper Functions ---
 function calculateNetworkDelay(clientTimestamp: number | undefined, receivedTimestamp: number): number {
     if (clientTimestamp && typeof clientTimestamp === 'number') {
         const delay = receivedTimestamp - clientTimestamp;
-        // 비정상적인 값 필터링 (음수거나 너무 큰 경우)
+        // Filter out abnormal values (negative or too large)
         if (delay >= 0 && delay <= 5000) {
             return delay;
         }
@@ -102,34 +102,34 @@ function extrapolateProgress(data: any): any {
     return responseData;
 }
 
-// --- 설정 업데이트 처리 ---
+// --- Process Settings Update ---
 function handleSettingsUpdate(newSettings: any): NextResponse {
-    console.log("⚙️ 설정 업데이트 수신:", JSON.stringify(newSettings, null, 2));
+    console.log("⚙️ Settings update received:", JSON.stringify(newSettings, null, 2));
     currentData.settings = { ...currentData.settings, ...newSettings };
     saveSettings(currentData.settings);
 
-    // 클라이언트 점프 방지: 현재 서버 시간 기준으로 진행률 보정 후 송출
+    // Prevent client jumps: Compensate progress based on current server time before broadcast
     const emitData = extrapolateProgress(currentData);
 
-    console.log("✅ 현재 서버 설정:", JSON.stringify(currentData.settings, null, 2));
+    console.log("✅ Current server settings:", JSON.stringify(currentData.settings, null, 2));
     eventEmitter.emit('update', emitData);
     return NextResponse.json({ success: true });
 }
 
-// --- 새 트랙 처리 ---
+// --- Process New Track ---
 async function handleNewTrack(
     newData: any,
     currentTrackId: string,
     receivedTimestamp: number,
     networkDelay: number
 ): Promise<void> {
-    console.log(`\n🎵 새 노래 감지: ${currentTrackId}`);
+    console.log(`\n🎵 New track detected: ${currentTrackId}`);
     lastSearchedTrackId = currentTrackId;
 
-    // 설정 필드 제외하고 데이터 정리
+    // Clean data except for settings fields
     const { settings: _, ...cleanNewData } = newData;
 
-    // Step 1: 메타데이터 즉시 업데이트 (가사 비움)
+    // Step 1: Immediate metadata update (clear lyrics)
     currentData = {
         ...currentData,
         ...cleanNewData,
@@ -141,13 +141,13 @@ async function handleNewTrack(
         source: ""
     };
 
-    // SSE 송출: "새 노래 시작됨 (가사 찾는 중)"
+    // SSE Broadcast: "New song started (Searching lyrics)"
     eventEmitter.emit('update', { ...currentData });
 
-    // Step 2: 가사 검색
+    // Step 2: Search lyrics
     let lyricsResult = processSpotifyLyrics(newData.spotifyLyrics);
 
-    // Spotify 가사가 없으면 LRCLIB 시도
+    // Try LRCLIB if Spotify lyrics are missing
     if (lyricsResult.status !== 'ok') {
         lyricsResult = await searchLrclib(
             newData.title,
@@ -158,33 +158,33 @@ async function handleNewTrack(
         );
     }
 
-    // Step 3: 가사 결과 적용
-    // 트랙이 여전히 이 요청의 트랙인지 확인 (곡 넘김 시 뒤늦은 결과 무시)
+    // Step 3: Apply lyrics result
+    // Verify track is still the current one (ignore late results if skipped)
     if (currentData.trackId === currentTrackId) {
         if (lyricsResult.lyrics.length > 0) {
-            // Spotify 가사가 이미 존재하면 LRCLIB 무시
+            // Ignore LRCLIB if Spotify lyrics already found
             if (currentData.source === 'Spotify' && lyricsResult.source !== 'Spotify') {
-                console.log(`   ⚠️ Spotify 가사가 이미 존재하여 ${lyricsResult.source} 가사를 무시합니다.`);
+                console.log(`   ⚠️ Spotify lyrics already exist, ignoring ${lyricsResult.source} lyrics.`);
             } else {
                 currentData.lyrics = lyricsResult.lyrics;
                 currentData.lyricsStatus = 'ok';
                 currentData.source = lyricsResult.source;
-                console.log(`   ✨ 가사 적용 완료 (${lyricsResult.source})`);
+                console.log(`   ✨ Lyrics applied (${lyricsResult.source})`);
             }
         } else if (currentData.lyricsStatus === 'searching') {
-            console.log(`   ❌ 가사를 찾을 수 없음.`);
+            console.log(`   ❌ Lyrics not found.`);
             currentData.lyricsStatus = 'not_found';
             currentData.source = "";
         }
 
-        // SSE 송출: "가사 찾음 (또는 못 찾음)"
+        // SSE Broadcast: "Lyrics found (or not found)"
         eventEmitter.emit('update', { ...currentData });
     } else {
-        console.log(`   ⚠️ 트랙이 바뀌어 (${currentTrackId} -> ${currentData.trackId}) 검색 결과를 무시합니다.`);
+        console.log(`   ⚠️ Track changed (${currentTrackId} -> ${currentData.trackId}), ignoring search result.`);
     }
 }
 
-// --- 기존 트랙 업데이트 처리 ---
+// --- Process Existing Track Update ---
 function handleExistingTrack(
     newData: any,
     currentTrackId: string,
@@ -195,9 +195,9 @@ function handleExistingTrack(
     const hasSpotifyLyrics = spotifyLines && Array.isArray(spotifyLines);
     const { settings: _, ...cleanNewData } = newData;
 
-    // Spotify 가사가 뒤늦게 도착한 경우
+    // If Spotify lyrics arrived late
     if (hasSpotifyLyrics && (currentData.lyricsStatus !== 'ok' || currentData.source !== 'Spotify')) {
-        console.log(`   ✅ 뒤늦게 Spotify Native 가사 도착! (기존 ${currentData.source} 대체)`);
+        console.log(`   ✅ Spotify Native lyrics arrived late! (Replacing ${currentData.source})`);
         const lyricsResult = processSpotifyLyrics(newData.spotifyLyrics);
 
         currentData = {
@@ -211,7 +211,7 @@ function handleExistingTrack(
             networkDelay: networkDelay
         };
     } else {
-        // 앨범 커버 무결성 보강
+        // Ensure album cover integrity
         const finalCover = cleanNewData.cover || currentData.cover;
 
         currentData = {
@@ -227,18 +227,18 @@ function handleExistingTrack(
         };
     }
 
-    // SSE 송출
+    // SSE Broadcast
     eventEmitter.emit('update', { ...currentData });
 }
 
-// --- API 라우트 핸들러 ---
+// --- API Route Handler ---
 export async function POST(request: Request) {
     const receivedTimestamp = Date.now();
 
     try {
         const newData = await request.json();
 
-        // 설정 업데이트 요청인 경우
+        // If settings update request
         if (newData.type === 'settings_update' && newData.settings) {
             return handleSettingsUpdate(newData.settings);
         }
@@ -246,23 +246,23 @@ export async function POST(request: Request) {
         const currentTrackId = newData.trackId || `${newData.title} - ${newData.artist}`;
         const networkDelay = calculateNetworkDelay(newData.clientTimestamp, receivedTimestamp);
 
-        // Progress 값 추출
+        // Extract progress value
         const rawProgress = Number(newData.progress);
         const nextProgress = isNaN(rawProgress) ? 0 : rawProgress;
 
-        // 새 노래 vs 기존 노래
+        // New track vs existing track
         if (currentTrackId !== lastSearchedTrackId) {
-            // [Fix] 새 노래인 경우 진행률도 0으로 초기화하거나 전달된 값 사용
+            // [Fix] Reset progress to 0 or use provided value for new track
             newData.progress = nextProgress;
             handleNewTrack(newData, currentTrackId, receivedTimestamp, networkDelay).catch(err => {
                 console.error("Async track processing error:", err);
             });
         } else {
-            // [Fix] 같은 곡인데 갑자기 진행률이 0으로 점프하는 비정상 데이터 필터링
-            // (Spicetify가 곡 중간에 잠깐 0을 보고하는 경우가 있음)
+            // [Fix] Filter abnormal data where progress jumps to 0 for same track
+            // (Spicetify occasionally reports 0 in the middle of a song)
             if (nextProgress === 0 && currentData.progress > 3000) {
-                // console.log("⚠️ 진행률 역주행(0) 방지");
-                newData.progress = currentData.progress; // 기존 값 유지
+                // Prevent progress backtracking
+                newData.progress = currentData.progress; // Keep existing value
             } else {
                 currentData.progress = nextProgress;
             }

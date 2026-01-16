@@ -4,14 +4,14 @@ import { useState, useEffect, useMemo } from "react"
 import { useSettings } from "../context/SettingsContext"
 
 /**
- * 전역 테마 및 색상 관리를 위한 훅
- * 전역 배경색, 위젯 배경색 등을 일관되게 계산합니다.
+ * Hook for global theme and color management
+ * Calculates global background color and widget background color consistently.
  */
 export function useTheme(coverUrl: string | undefined) {
     const { settings } = useSettings()
     const [dominantColor, setDominantColor] = useState<string>("18, 18, 18")
 
-    // 색상 추출 로직 (통합)
+    // Color extraction logic (integrated)
     useEffect(() => {
         if (!coverUrl) return
 
@@ -41,25 +41,25 @@ export function useTheme(coverUrl: string | undefined) {
         extractColor()
     }, [coverUrl])
 
-    // 공통 배경 계산 로직
+    // Common background calculation logic
     const theme = useMemo(() => {
         const isAlbumMode = settings.pageBackgroundStyle === 'album'
         const [r, g, b] = dominantColor.split(',').map(c => parseInt(c.trim()))
 
-        // 밝기 계산 (Luminance)
+        // Calculate Luminance
         const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
 
-        // 가독성 높은 강조색 (진행바 등용)
-        // 밝은 색상은 어둡게 조절하여 흰색 텍스트/UI와 대비가 잘 되도록 함
+        // High contrast accent color (for progress bar, etc.)
+        // Darken bright colors to ensure contrast with white text/UI
         let accentR = r, accentG = g, accentB = b
         if (luminance > 0.6) {
-            // 밝은 색상이면 어둡게 조절 (50% 정도로)
+            // Darken if too bright (approx. 50%)
             const darkenFactor = 0.5
             accentR = Math.floor(r * darkenFactor)
             accentG = Math.floor(g * darkenFactor)
             accentB = Math.floor(b * darkenFactor)
         } else if (luminance < 0.15) {
-            // 너무 어두운 색상이면 약간 밝게 조절
+            // Brighten slightly if too dark
             const brightenFactor = 1.5
             accentR = Math.min(255, Math.floor(r * brightenFactor) + 30)
             accentG = Math.min(255, Math.floor(g * brightenFactor) + 30)
@@ -67,12 +67,12 @@ export function useTheme(coverUrl: string | undefined) {
         }
         const accentColor = `${accentR}, ${accentG}, ${accentB}`
 
-        // 1. 전체 페이지 배경색
+        // 1. Global Page Background
         const globalBg = isAlbumMode
             ? `rgb(${[r, g, b].map(c => Math.floor(c * 0.4)).join(',')})`
             : settings.pageBackgroundColor
 
-        // 2. 가사/위젯용 기본 배경색 (불투명)
+        // 2. Default Widget/Lyrics Background (Opaque)
         const lyricsBg = settings.lyricsStyle === 'custom'
             ? settings.customColors.lyricsBg
             : `rgb(${dominantColor})`

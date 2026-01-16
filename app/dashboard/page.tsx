@@ -16,10 +16,10 @@ export default function DashboardPage() {
     const { data, serverSettings, isDisconnected } = useSpotifyData()
     const { settings, updateSettings, resetSettings } = useSettings()
 
-    // 서버에서 온 마지막 설정을 저장하여 중복 동기화 방지
+    // Store last synced settings from server to prevent redundant synchronization
     const lastSyncedSettingsRef = useRef<string>("")
 
-    // 로컬 상태 (즉시 적용 방지용 Draft)
+    // Local state (Draft styles to prevent immediate apply)
     const [draftWidgetStyle, setDraftWidgetStyle] = useState<'album' | 'custom'>('album')
     const [draftLyricsStyle, setDraftLyricsStyle] = useState<'album' | 'custom'>('album')
     const [draftAnimationStyle, setDraftAnimationStyle] = useState<'default' | 'fade'>('fade')
@@ -28,7 +28,7 @@ export default function DashboardPage() {
     const [draftSimpleWidgetBg, setDraftSimpleWidgetBg] = useState('#18181b')
     const [draftSquareWidgetBg, setDraftSquareWidgetBg] = useState('#18181b')
 
-    // 추가 기능 Draft
+    // Additional feature Drafts
     const [draftPageBgStyle, setDraftPageBgStyle] = useState<'album' | 'custom'>('album')
     const [draftPageBgColor, setDraftPageBgColor] = useState('#000000')
     const [draftLyricsBounce, setDraftLyricsBounce] = useState(true)
@@ -41,13 +41,13 @@ export default function DashboardPage() {
 
     const [showToast, setShowToast] = useState(false)
 
-    // 초기 로딩 및 서버 설정 변경 시 동기화
+    // Sync on initial load and when server settings change
     useEffect(() => {
         if (serverSettings) {
             const settingsString = JSON.stringify(serverSettings)
             if (settingsString === lastSyncedSettingsRef.current) return
 
-            console.log("🔄 서버 설정 변경 감지 - 대시보드 동기화")
+            console.log("🔄 Server settings change detected - syncing dashboard")
             lastSyncedSettingsRef.current = settingsString
 
             setDraftWidgetStyle(serverSettings.widgetStyle)
@@ -118,39 +118,39 @@ export default function DashboardPage() {
             {/* Toast Notification */}
             {showToast && (
                 <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-green-600 text-white px-8 py-3 rounded-full shadow-2xl font-bold animate-in fade-in slide-in-from-top-4 duration-500">
-                    ✅ 설정이 서버에 적용되었습니다!
+                    ✅ Settings applied successfully!
                 </div>
             )}
 
             {/* Header */}
             <header className="flex justify-between items-center mb-10">
                 <h1 className="text-4xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
-                    R1G3L-Flux | 대시보드
+                    R1G3L-Flux | Dashboard
                 </h1>
                 <div className="flex gap-4">
                     <button
                         onClick={handleApply}
                         className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full shadow-lg transition-all transform hover:scale-105"
                     >
-                        설정 저장 및 적용
+                        Save & Apply
                     </button>
-                    <a href="/widget" target="_blank" className="px-4 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition">정보</a>
-                    <a href="/lyrics" target="_blank" className="px-4 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition">가사</a>
+                    <a href="/widget" target="_blank" className="px-4 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition">Widget</a>
+                    <a href="/lyrics" target="_blank" className="px-4 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition">Lyrics</a>
                     <div className="w-px h-8 bg-zinc-800 mx-1" />
-                    <a href="/simple" target="_blank" className="px-4 py-2 bg-green-600/20 text-green-400 border border-green-600/30 rounded-lg hover:bg-green-600/30 transition font-bold">심플 위젯</a>
-                    <a href="/square" target="_blank" className="px-4 py-2 bg-purple-600/20 text-purple-400 border border-purple-600/30 rounded-lg hover:bg-purple-600/30 transition font-bold">정사각형</a>
-                    <a href="/full" target="_blank" className="px-4 py-2 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-600/30 transition font-bold">전체 화면</a>
+                    <a href="/simple" target="_blank" className="px-4 py-2 bg-green-600/20 text-green-400 border border-green-600/30 rounded-lg hover:bg-green-600/30 transition font-bold">Simple</a>
+                    <a href="/square" target="_blank" className="px-4 py-2 bg-purple-600/20 text-purple-400 border border-purple-600/30 rounded-lg hover:bg-purple-600/30 transition font-bold">Square</a>
+                    <a href="/full" target="_blank" className="px-4 py-2 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-600/30 transition font-bold">Full Screen</a>
                     <div className="w-px h-8 bg-zinc-800 mx-1" />
                     <button
                         onClick={async () => {
-                            if (confirm('R1G3L-Flux 프로그램을 정말 종료하시겠습니까?')) {
+                            if (confirm('Are you sure you want to exit R1G3L-Flux?')) {
                                 await fetch('/api/shutdown', { method: 'POST' });
                                 window.close();
                             }
                         }}
                         className="px-4 py-2 bg-red-600/20 text-red-500 border border-red-600/30 rounded-lg hover:bg-red-600/40 transition font-bold"
                     >
-                        종료
+                        Exit
                     </button>
                 </div>
             </header>
@@ -211,7 +211,7 @@ export default function DashboardPage() {
             {/* Footer */}
             <div className="mt-8 flex justify-end">
                 <button onClick={resetSettings} className="text-xs text-red-500 hover:underline">
-                    기본값으로 초기화
+                    Reset to Default
                 </button>
             </div>
         </div>

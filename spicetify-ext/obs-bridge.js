@@ -1,4 +1,4 @@
-// obs-bridge.js - Spotify <-> R1G3L-Flux 연동
+// obs-bridge.js - Spotify <-> R1G3L-Flux Integration
 (async function OBSBridge() {
     while (!Spicetify || !Spicetify.Player || !Spicetify.CosmosAsync) {
         await new Promise(r => setTimeout(r, 100));
@@ -6,7 +6,7 @@
 
     const SERVER_URL = "http://localhost:6974/update";
 
-    // 상태 변수
+    // State variables
     let lastTrackId = "";
     let cachedLyrics = null;
     let isFetchingLyrics = false;
@@ -15,14 +15,14 @@
 
     console.log("%c[OBS-Bridge] LOADED (Sync Fix v4)", "background: purple; color: white; font-size: 14px;");
 
-    // 1. 가사 가져오기 (비동기)
+    // 1. Fetch Lyrics (Async)
     async function fetchNativeLyrics(trackId) {
         if (isFetchingLyrics) return null;
         isFetchingLyrics = true;
-        console.log(`[OBS-Bridge] 가사 검색 중... (${trackId})`);
+        console.log(`[OBS-Bridge] Searching lyrics... (${trackId})`);
 
         try {
-            // Platform API 우선
+            // Try Platform API first
             if (Spicetify.Platform?.LyricsAPI?.getLyrics) {
                 const lyrics = await Spicetify.Platform.LyricsAPI.getLyrics(trackId);
                 if (lyrics) {
@@ -31,21 +31,21 @@
                 }
             }
 
-            // Cosmos API 차선
+            // Cosmos API fallback
             const response = await Spicetify.CosmosAsync.get(`https://spclient.wg.spotify.com/color-lyrics/v2/track/${trackId}?format=json&market=from_token`);
             if (response && response.lyrics) {
                 isFetchingLyrics = false;
                 return response.lyrics;
             }
         } catch (e) {
-            // console.warn("가사 없음 or 에러");
+            // console.warn("Lyrics not found or error");
         }
 
         isFetchingLyrics = false;
         return null;
     }
 
-    // 2. 데이터 전송 (핵심)
+    // 2. Data Transmission (Core Logic)
     async function sendData(reason) {
         try {
             const data = Spicetify.Player.data;
@@ -56,22 +56,22 @@
             const trackId = trackUri.split(':')[2];
             const isPlaying = Spicetify.Player.isPlaying();
 
-            // Duration: metadata 대신 Player API 사용
+            // Duration: Use Player API instead of metadata
             const duration = Spicetify.Player.getDuration();
             const progress = Spicetify.Player.getProgress();
 
-            // 곡 변경 감지
+            // Detect track change
             if (trackId !== lastTrackId) {
-                console.log(`%c[OBS-Bridge] 곡 변경: ${meta.title}`, "color: yellow;");
+                console.log(`%c[OBS-Bridge] Track Change: ${meta.title}`, "color: yellow;");
                 lastTrackId = trackId;
-                cachedLyrics = null; // 초기화
+                cachedLyrics = null; // Reset cache
 
-                // 가사 요청 시작
+                // Request lyrics
                 fetchNativeLyrics(trackId).then(lyrics => {
                     if (lyrics) {
-                        console.log("%c[OBS-Bridge] 가사 찾음! 재전송", "color: lime;");
+                        console.log("%c[OBS-Bridge] Lyrics found! Resending data", "color: lime;");
                         cachedLyrics = lyrics;
-                        // 가사 찾은 즉시 업데이트 (딜레이 없이)
+                        // Update immediately once lyrics are found
                         sendData("lyrics_found");
                     }
                 });
@@ -79,7 +79,7 @@
 
             const payload = {
                 timestamp: Date.now(),
-                clientTimestamp: Date.now(), // 네트워크 지연 자동 계산용
+                clientTimestamp: Date.now(), // For auto-calculating network delay
                 reason: reason,
                 isPlaying: isPlaying,
                 title: meta.title,
@@ -101,21 +101,21 @@
             lastCheckTime = Date.now();
 
         } catch (err) {
-            console.error("[OBS-Bridge] 전송 에러", err);
+            console.error("[OBS-Bridge] Transmission error", err);
         }
     }
 
-    // 3. 타이머 & Seek 감지
+    // 3. Timer & Seek Detection
     setInterval(() => {
         if (Spicetify.Player.isPlaying()) {
             const current = Spicetify.Player.getProgress();
             const now = Date.now();
             const expected = lastProgress + (now - lastCheckTime);
 
-            // 1.5초 이상 차이날 때만 Seek로 간주 (민감도 완화)
+            // Consider a Seek if difference is > 1.5s (sensitivity buffer)
             const isSeek = Math.abs(current - expected) > 1500;
 
-            // "처음으로 되돌리기" 감지 (3초 이상 진행 → 2초 미만)
+            // Detect "Back to Start" (Started > 3s -> < 2s)
             const isRestart = lastProgress > 3000 && current < 2000;
 
             if (isSeek || isRestart) {
@@ -126,11 +126,11 @@
             lastProgress = current;
             lastCheckTime = now;
         } else {
-            // 멈춰있을 땐 시간만 갱신
+            // Update timestamp only when paused
             lastProgress = Spicetify.Player.getProgress();
             lastCheckTime = Date.now();
         }
-    }, 1000); // 1초 체크 (부담 줄임)
+    }, 1000); // 1s check interval (low overhead)
 
     Spicetify.Player.addEventListener("songchange", () => sendData("songchange"));
     Spicetify.Player.addEventListener("onplaypause", () => sendData("playpause"));

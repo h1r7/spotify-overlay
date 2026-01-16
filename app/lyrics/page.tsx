@@ -10,7 +10,7 @@ export default function LyricsPage() {
     const { data, currentProgress, serverSettings, isDisconnected } = useSpotifyData()
     const { updateSettings } = useSettings()
 
-    // 서버 설정 동기화 (OBS 등 분리된 환경 대응)
+    // Sync server settings (Support isolated environments like OBS)
     useEffect(() => {
         if (serverSettings) {
             updateSettings(serverSettings)

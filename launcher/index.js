@@ -156,45 +156,86 @@ async function main() {
         const args = process.argv.slice(2);
 
         // MODE 1: Install Spicetify Extension
+        // MODE 1: Install Spicetify Extension
         if (args.includes('--install')) {
-            logEssential('Installing Spicetify Extension...');
+            logEssential('Checking Spicetify installation...');
 
-            if (!fs.existsSync(SPICETIFY_EXT_PATH)) {
-                logEssential('Error: Spicetify Extensions directory not found at ' + SPICETIFY_EXT_PATH);
-                process.exit(1);
+            const checkSpicetify = () => new Promise((resolve) => {
+                exec('spicetify -v', (err) => resolve(!err));
+            });
+
+            const installSpicetify = () => new Promise((resolve) => {
+                logEssential('Spicetify not found. Installing...');
+                const cmd = 'powershell -Command "iwr -useb https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.ps1 | iex"';
+                exec(cmd, (err, stdout, stderr) => {
+                    if (err) {
+                        logEssential('Failed to install Spicetify: ' + stderr);
+                        resolve(false);
+                    } else {
+                        logEssential('Spicetify installed successfully.');
+                        resolve(true);
+                    }
+                });
+            });
+
+            const upgradeSpicetify = () => new Promise((resolve) => {
+                logEssential('Spicetify found. Checking for updates...');
+                exec('spicetify upgrade', (err, stdout) => {
+                    if (stdout && stdout.includes('success')) logEssential('Spicetify updated.');
+                    else logEssential('Spicetify is up to date.');
+                    resolve(true);
+                });
+            });
+
+            const hasSpicetify = await checkSpicetify();
+            if (!hasSpicetify) {
+                const installed = await installSpicetify();
+                if (!installed) process.exit(1);
+            } else {
+                await upgradeSpicetify();
             }
 
-            const targetPath = path.join(SPICETIFY_EXT_PATH, 'obs-bridge.js');
+            // Re-check path after install
+            const APPDATA_ACTUAL = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
+            const SPICETIFY_EXT_PATH_ACTUAL = path.join(APPDATA_ACTUAL, 'spicetify', 'Extensions');
+
+            if (!fs.existsSync(SPICETIFY_EXT_PATH_ACTUAL)) {
+                // Try create if missing (fresh install might need it)
+                try { fs.mkdirSync(SPICETIFY_EXT_PATH_ACTUAL, { recursive: true }); }
+                catch (e) {
+                    logEssential('Error: Spicetify Extensions directory not found at ' + SPICETIFY_EXT_PATH_ACTUAL);
+                    process.exit(1);
+                }
+            }
+
+            const targetPath = path.join(SPICETIFY_EXT_PATH_ACTUAL, 'obs-bridge.js');
             fs.writeFileSync(targetPath, OBS_BRIDGE_CONTENT);
 
             logEssential('Configuring Spicetify...');
-            exec('spicetify config extensions obs-bridge.js', (err1) => {
-                if (err1) {
-                    exec('spicetify backup apply', (err2) => {
-                        if (err2) process.exit(1);
-                        else {
-                            logEssential('Installation Complete (backup)!');
-                            process.exit(0);
-                        }
-                    });
-                    return;
-                }
 
-                exec('spicetify apply', (err2) => {
-                    if (err2) {
-                        exec('spicetify backup apply', (err3) => {
-                            if (err3) process.exit(1);
-                            else {
-                                logEssential('Installation Complete (backup)!');
-                                process.exit(0);
-                            }
-                        });
-                        return;
-                    }
-                    logEssential('Installation Complete!');
-                    process.exit(0);
+            const runSpicetifyCmd = (cmd) => new Promise((resolve, reject) => {
+                exec(cmd, (err, stdout, stderr) => {
+                    if (err) reject(stderr || err.message);
+                    else resolve(stdout);
                 });
             });
+
+            try {
+                await runSpicetifyCmd('spicetify config extensions obs-bridge.js');
+                await runSpicetifyCmd('spicetify apply');
+                logEssential('Installation Complete!');
+                process.exit(0);
+            } catch (err) {
+                try {
+                    logEssential('Standard apply failed, trying backup apply...');
+                    await runSpicetifyCmd('spicetify backup apply');
+                    logEssential('Installation Complete (backup)!');
+                    process.exit(0);
+                } catch (err2) {
+                    logEssential('Installation Failed: ' + err2);
+                    process.exit(1);
+                }
+            }
             return;
         }
 
@@ -203,7 +244,12 @@ async function main() {
             await startServer();
             return;
         }
+    } catch (e) {
+        logEssential('Launcher Error: ' + e.message);
+        process.exit(1);
+    }
 
+    try {
         // MODE 3: Launcher (Default)
         logEssential('--- R1G3L-Flux Launcher ---');
         logEssential('Launching background service...');
