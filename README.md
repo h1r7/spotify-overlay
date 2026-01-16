@@ -29,34 +29,20 @@ OBS 스트리밍을 위한 프리미엄 Spotify Now Playing 오버레이
 
 ## 🚀 시작하기
 
-### 필수 조건
+### 사용자용 (권장)
+가장 빠르고 간편한 설치 방법입니다.
 
-- Node.js 18+
-- [Spicetify](https://spicetify.app/) 설치된 Spotify 데스크톱 앱
+1. **[Latest Release](https://github.com/h1r7/spotify-overlay/releases/latest)** 페이지에서 `FLUX-setup.bat` 파일을 다운로드합니다.
+2. `FLUX-setup.bat`을 실행합니다. (자동으로 최신 `FLUX.exe` 다운로드 및 Spicetify 설정 진행)
+3. 설치가 완료되면 `FLUX.exe`를 실행하여 오버레이를 시작합니다.
 
-### 설치
+👉 **[상세 설정 가이드 (Spicetify 연동)](./docs/spicetify-setup.md)**
 
-```bash
-# 저장소 클론
-git clone https://github.com/your-repo/spotify-overlay-design.git
-cd spotify-overlay-design
-
-# 의존성 설치
-npm install
-
-# 개발 서버 시작
-npm run dev
-
-# 또는 프로덕션 빌드
-npm run build
-npm start
-```
-
-### Spicetify 설정
-
-Spotify와 연동하려면 Spicetify 확장을 설치해야 합니다.
-
- 👉 **[Spicetify 설정 가이드](./docs/spicetify-setup.md)**
+### 개발자용 (직접 빌드)
+1. **필수 조건**: Node.js 18+, [Spicetify](https://spicetify.app/) 설치
+2. **저장소 클론**: `git clone https://github.com/h1r7/spotify-overlay.git`
+3. **의존성 설치**: `npm install`
+4. **실행**: `npm run dev` (개발 모드) 또는 `npm run deploy` (배포 파일 생성)
 
 ## 📦 배포 가이드 (개발자용)
 

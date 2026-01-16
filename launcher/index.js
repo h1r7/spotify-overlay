@@ -13,44 +13,27 @@ if (!process.argv.includes('--server')) {
     try { fs.writeFileSync(logFile, ''); } catch (e) { }
 }
 
-let lastLogMsg = '';
-let lastLogCount = 0;
-
-const log = (msg, isVerbose = true) => {
-    const rawMsg = util.format(msg);
-    const cleanMsg = rawMsg.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '').trim();
-    if (!cleanMsg) return;
-
-    if (cleanMsg === lastLogMsg) {
-        lastLogCount++;
-        return;
-    } else {
-        if (lastLogCount > 0) {
-            try { fs.appendFileSync(logFile, `[Last message repeated ${lastLogCount} times]\n`); } catch (e) { }
-        }
-        lastLogMsg = cleanMsg;
-        lastLogCount = 0;
-    }
-
+// Simple logging - reduced verbosity
+const log = (msg) => {
     const timestamp = new Date().toISOString().replace('T', ' ').split('.')[0];
-    const fileMsg = `[${timestamp}] ${cleanMsg}\n`;
-
-    if (!cleanMsg.includes('GET /update') && !cleanMsg.includes('POST /update') && !cleanMsg.includes('GET /events')) {
-        try { fs.appendFileSync(logFile, fileMsg); } catch (e) { }
-    }
-
-    // Only log to console if NOT verbose or if it's an error/critical
-    // AND if we are NOT in server mode (which runs hidden)
-    if ((!isVerbose || cleanMsg.toLowerCase().includes('error') || cleanMsg.toLowerCase().includes('critical')) && !process.argv.includes('--server')) {
-        process.stdout.write(rawMsg + '\n');
-    }
+    const line = `[${timestamp}] ${msg}\n`;
+    try {
+        fs.appendFileSync(logFile, line);
+        if (!process.argv.includes('--server')) {
+            process.stdout.write(line);
+        }
+    } catch (e) { }
 };
 
-const logEssential = (msg) => log(msg, false);
+const logEssential = log;
 
 // Configuration
 const PORT = 6974;
-const URLS = [`http://localhost:${PORT}/full`, `http://localhost:${PORT}/dashboard`];
+// OPEN BOTH DASHBOARD AND FULL OVERLAY
+const URLS = [
+    `http://127.0.0.1:${PORT}/dashboard`,
+    `http://127.0.0.1:${PORT}/full`
+];
 const APPDATA = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
 const SPICETIFY_EXT_PATH = path.join(APPDATA, 'spicetify', 'Extensions');
 
@@ -63,296 +46,204 @@ const OBS_BRIDGE_CONTENT = `// obs-bridge.js - Spotify <-> R1G3L-Flux Link
 
     const SERVER_URL = "http://localhost:6974/update";
     
-    // Status State
     let lastTrackId = "";
     let cachedLyrics = null;
     let isFetchingLyrics = false;
     let lastProgress = 0;
     let lastCheckTime = Date.now();
 
-    console.log("%c[OBS-Bridge] LOADED (Sync Fix v4)", "background: purple; color: white; font-size: 14px;");
+    console.log("%c[OBS-Bridge] LOADED", "background: purple; color: white; font-size: 14px;");
 
-    // 1. Fetch Lyrics (Async)
     async function fetchNativeLyrics(trackId) {
         if (isFetchingLyrics) return null;
         isFetchingLyrics = true;
-        console.log(\`[OBS-Bridge] Searching lyrics... (\${trackId})\`);
-
         try {
-            // Platform API first
             if (Spicetify.Platform?.LyricsAPI?.getLyrics) {
                 const lyrics = await Spicetify.Platform.LyricsAPI.getLyrics(trackId);
-                if (lyrics) {
-                    isFetchingLyrics = false;
-                    return lyrics; 
-                }
+                if (lyrics) { isFetchingLyrics = false; return lyrics; }
             }
-            
-            // Cosmos API backup
             const response = await Spicetify.CosmosAsync.get(\`https://spclient.wg.spotify.com/color-lyrics/v2/track/\${trackId}?format=json&market=from_token\`);
-            if (response && response.lyrics) {
-                isFetchingLyrics = false;
-                return response.lyrics;
-            }
-        } catch (e) {
-            // console.warn("No lyrics or error");
-        }
-        
+            if (response && response.lyrics) { isFetchingLyrics = false; return response.lyrics; }
+        } catch (e) { }
         isFetchingLyrics = false;
         return null;
     }
 
-    // 2. Send Data (Core)
     async function sendData(reason) {
         try {
             const data = Spicetify.Player.data;
             if (!data || !data.item) return;
-
             const meta = data.item.metadata;
             const trackUri = data.item.uri;
             const trackId = trackUri.split(':')[2];
             const isPlaying = Spicetify.Player.isPlaying();
-            
-            // Duration: use Player API instead of metadata
             const duration = Spicetify.Player.getDuration(); 
             const progress = Spicetify.Player.getProgress();
 
-            // Song Change Detection
             if (trackId !== lastTrackId) {
-                console.log(\`%c[OBS-Bridge] Song Changed: \${meta.title}\`, "color: yellow;");
                 lastTrackId = trackId;
-                cachedLyrics = null; // Reset
-                
-                // Start Lyrics Fetch
+                cachedLyrics = null;
                 fetchNativeLyrics(trackId).then(lyrics => {
-                    if (lyrics) {
-                        console.log("%c[OBS-Bridge] Lyrics Found! Resending", "color: lime;");
-                        cachedLyrics = lyrics;
-                        // Send immediately when lyrics found
-                        sendData("lyrics_found"); 
-                    }
+                    if (lyrics) { cachedLyrics = lyrics; sendData("lyrics_found"); }
                 });
             }
-
-            const payload = {
-                timestamp: Date.now(),
-                clientTimestamp: Date.now(),
-                reason: reason,
-                isPlaying: isPlaying,
-                title: meta.title,
-                artist: meta.artist_name,
-                cover: meta.image_url ? meta.image_url.replace("spotify:image:", "https://i.scdn.co/image/") : "",
-                progress: progress,
-                duration: duration,
-                trackId: trackId,
-                spotifyLyrics: cachedLyrics
-            };
 
             await fetch(SERVER_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    timestamp: Date.now(), clientTimestamp: Date.now(), reason,
+                    isPlaying, title: meta.title, artist: meta.artist_name,
+                    cover: meta.image_url ? meta.image_url.replace("spotify:image:", "https://i.scdn.co/image/") : "",
+                    progress, duration, trackId, spotifyLyrics: cachedLyrics
+                })
             });
-
             lastProgress = progress;
             lastCheckTime = Date.now();
-
-        } catch (err) {
-            console.error("[OBS-Bridge] Send Error", err);
-        }
+        } catch (err) { }
     }
 
-    // 3. Timer & Seek Detection
     setInterval(() => {
         if (Spicetify.Player.isPlaying()) {
             const current = Spicetify.Player.getProgress();
-            const now = Date.now();
-            const expected = lastProgress + (now - lastCheckTime);
-
-            // Consider as seek if diff > 1.5s
-            const isSeek = Math.abs(current - expected) > 1500;
-            
-            // Detect "Restart" (progress > 3s -> < 2s)
-            const isRestart = lastProgress > 3000 && current < 2000;
-
-            if (isSeek || isRestart) {
-                console.log("[OBS-Bridge] Seek!");
+            const expected = lastProgress + (Date.now() - lastCheckTime);
+            if (Math.abs(current - expected) > 1500 || (lastProgress > 3000 && current < 2000)) {
                 sendData("seek");
             }
-            
             lastProgress = current;
-            lastCheckTime = now;
+            lastCheckTime = Date.now();
         } else {
-            // Update time only when paused
             lastProgress = Spicetify.Player.getProgress();
             lastCheckTime = Date.now();
         }
-    }, 1000); // Check every 1s
+    }, 1000);
 
     Spicetify.Player.addEventListener("songchange", () => sendData("songchange"));
     Spicetify.Player.addEventListener("onplaypause", () => sendData("playpause"));
-    
     sendData("init");
 })();
 `;
 
-function checkServerReady() {
-    return new Promise((resolve) => {
-        const req = http.get(`http://localhost:${PORT}/api/health`, (res) => { // Assuming Next.js responds, or just root
-            resolve(true);
-        }).on('error', () => {
-            resolve(false);
-        });
-        req.end();
-    });
-}
-
 function openBrowsers() {
-    logEssential('Opening Dashboard & Overlay...');
+    logEssential('Opening Dashboard & Full Overlay...');
     const startParam = process.platform == 'darwin' ? 'open' : process.platform == 'win32' ? 'start' : 'xdg-open';
-    URLS.forEach(url => {
-        exec(`${startParam} ${url}`);
-    });
+    URLS.forEach(url => { exec(`${startParam} ${url}`); });
 }
 
 async function startServer() {
-    // Apply pkg compatibility patches
     require('./pkg-patches')();
 
-    const possibleServerPaths = [
-        path.join(__dirname, '..', '.next', 'standalone', 'server.js'),
-        path.join(process.cwd(), '.next', 'standalone', 'server.js'),
-        path.join(__dirname, 'server.js'),
-    ];
-
-    const serverPath = possibleServerPaths.find(p => fs.existsSync(p));
-
-    if (!serverPath) {
-        logEssential('Error: Could not find server.js');
-        process.exit(1);
-    }
-
-    logEssential('Starting Next.js Server (Background Mode)...');
+    logEssential('Starting Next.js Server...');
     process.env.PORT = PORT;
     process.env.HOSTNAME = '0.0.0.0';
     process.env.NODE_ENV = 'production';
 
-    require(serverPath);
-    logEssential('Server is Ready!');
+    // Use static require - pkg needs literal string path
+    // In pkg snapshot: __dirname is /snapshot/.../launcher
+    // server.js is at /snapshot/.../.next/standalone/server.js
+    try {
+        require('../.next/standalone/server.js');
+        logEssential('Server is Ready!');
+    } catch (e) {
+        logEssential('Error loading server: ' + e.message);
+        console.error(e);
+        process.exit(1);
+    }
 }
 
 async function main() {
     try {
         const args = process.argv.slice(2);
 
-        // MODE 1: Install
+        // MODE 1: Install Spicetify Extension
         if (args.includes('--install')) {
             logEssential('Installing Spicetify Extension...');
-            // ... (Install logic same as before)
+
             if (!fs.existsSync(SPICETIFY_EXT_PATH)) {
-                console.error('Error: Spicetify Extensions directory not found.');
-                console.error(`Path: ${SPICETIFY_EXT_PATH}`);
-                console.error('Please install Spicetify first.');
+                logEssential('Error: Spicetify Extensions directory not found at ' + SPICETIFY_EXT_PATH);
                 process.exit(1);
             }
 
             const targetPath = path.join(SPICETIFY_EXT_PATH, 'obs-bridge.js');
             fs.writeFileSync(targetPath, OBS_BRIDGE_CONTENT);
-            console.log(`Extension file written to: ${targetPath}`);
 
-            console.log('Applying changes...');
-
-            // Run commands sequentially for better error handling
-            const runCmd = (cmd) => {
-                return new Promise((resolve, reject) => {
-                    exec(cmd, (err, stdout, stderr) => {
-                        if (stdout) console.log(stdout.trim());
-                        if (stderr) console.log(stderr.trim());
-                        if (err) reject(err);
-                        else resolve();
+            logEssential('Configuring Spicetify...');
+            exec('spicetify config extensions obs-bridge.js', (err1) => {
+                if (err1) {
+                    exec('spicetify backup apply', (err2) => {
+                        if (err2) process.exit(1);
+                        else {
+                            logEssential('Installation Complete (backup)!');
+                            process.exit(0);
+                        }
                     });
-                });
-            };
+                    return;
+                }
 
-            const applySpicetify = async () => {
-                try {
-                    // Try adding extension first
-                    await runCmd('spicetify config extensions obs-bridge.js');
-                    console.log('Extension registered.');
-
-                    // Then apply
-                    await runCmd('spicetify apply');
-                    console.log('Spicetify applied successfully.');
+                exec('spicetify apply', (err2) => {
+                    if (err2) {
+                        exec('spicetify backup apply', (err3) => {
+                            if (err3) process.exit(1);
+                            else {
+                                logEssential('Installation Complete (backup)!');
+                                process.exit(0);
+                            }
+                        });
+                        return;
+                    }
                     logEssential('Installation Complete!');
                     process.exit(0);
-                } catch (e) {
-                    console.error('Error applying Spicetify changes:', e);
-
-                    // Fallback: try backup apply
-                    try {
-                        console.log('Attempting backup apply...');
-                        await runCmd('spicetify backup apply');
-                        logEssential('Installation Complete (with backup)!');
-                        process.exit(0);
-                    } catch (e2) {
-                        console.error('Backup apply also failed. Please run manually:');
-                        console.error('  spicetify config extensions obs-bridge.js');
-                        console.error('  spicetify apply');
-                        process.exit(1);
-                    }
-                }
-            };
-
-            applySpicetify();
+                });
+            });
             return;
         }
 
-        // MODE 2: Background Server (Actual Worker)
+        // MODE 2: Background Server
         if (args.includes('--server')) {
             await startServer();
-            // Keep process alive indefinitely
             return;
         }
 
-        // MODE 3: Launcher (User Double Click)
+        // MODE 3: Launcher (Default)
         logEssential('--- R1G3L-Flux Launcher ---');
         logEssential('Launching background service...');
 
-        // Check if already running by pinging port
-        http.get(`http://localhost:${PORT}`, (res) => {
-            logEssential('Server is already running! Opening browser...');
-            openBrowsers();
-            setTimeout(() => process.exit(0), 1000);
-        }).on('error', () => {
-            // Not running, spawn it
-            const child = spawn(process.execPath, ['--server'], {
-                detached: true,
-                stdio: 'ignore',
-                windowsHide: true
+        // pkg requires the entry point script to be the first argument when spawning itself
+        const childArgs = [process.argv[1], '--server'];
+
+        const child = spawn(process.execPath, childArgs, {
+            detached: true,
+            stdio: 'ignore', // No need for debug logs anymore
+            windowsHide: true
+        });
+
+        child.unref();
+
+        logEssential('Service started. Waiting for initialization...');
+
+        // Poll until ready
+        let checks = 0;
+        const maxChecks = 60; // 30 seconds
+        const checkInterval = setInterval(() => {
+            // Use 127.0.0.1 specifically to avoid IPv6 (::1) issues on Windows
+            const req = http.get(`http://127.0.0.1:${PORT}`, (res) => {
+                clearInterval(checkInterval);
+                logEssential('Ready! Opening browser...');
+                openBrowsers();
+                setTimeout(() => process.exit(0), 1500);
             });
 
-            child.unref();
-
-            logEssential('Service started. Waiting for initialization...');
-
-            // Poll until ready then open browser
-            let checks = 0;
-            const checkInterval = setInterval(() => {
-                http.get(`http://localhost:${PORT}`, (res) => {
+            req.on('error', () => {
+                checks++;
+                if (checks > maxChecks) {
                     clearInterval(checkInterval);
-                    logEssential('Ready! Opening browser...');
-                    openBrowsers();
-                    setTimeout(() => process.exit(0), 1000);
-                }).on('error', () => {
-                    checks++;
-                    if (checks > 20) {
-                        clearInterval(checkInterval);
-                        logEssential('Error: Server timed out.');
-                        process.exit(1);
-                    }
-                });
-            }, 500);
-        });
+                    logEssential('Error: Server timed out.');
+                    process.exit(1);
+                }
+            });
+
+            req.end();
+        }, 500);
 
     } catch (err) {
         logEssential('CRITICAL ERROR: ' + err.message);

@@ -112,7 +112,7 @@ function LyricsWidget({ data, currentProgress, noBackground }: LyricsWidgetProps
                                     >
                                         <p
                                             className={`
-                                      text-2xl font-bold leading-relaxed whitespace-pre-wrap transition-colors duration-300
+                                      text-2xl font-bold leading-relaxed whitespace-pre-wrap transition-colors duration-300 break-keep break-words
                                       ${isActive ? "text-white" : "text-zinc-400"}
                                     `}
                                             style={{

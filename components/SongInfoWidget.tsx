@@ -134,7 +134,7 @@ function SongInfoWidget({ data, currentProgress, noBackground, debugSpeed }: Son
                         {/* key를 trackId로 변경하고, songChanged일 때만 애니메이션 적용 */}
                         <div key={data.trackId} className={(isFade && songChanged) ? "animate-in fade-in slide-in-from-bottom-4 duration-700" : ""}>
                             <h1 className="text-3xl font-black tracking-tighter text-white drop-shadow-lg line-clamp-2 leading-tight">{data.title}</h1>
-                            <p className="text-xl font-medium text-white/80 line-clamp-2 mt-1">{data.artist}</p>
+                            <p className="text-xl font-medium text-white/80 truncate w-full block mt-1">{data.artist}</p>
                         </div>
                     </div>
 

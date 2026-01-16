@@ -31,7 +31,7 @@ exit /b
         showintaskbar="yes"
         singleinstance="yes"
         sysmenu="yes"
-        version="1.4"
+        version="1.5"
         windowstate="normal"
         scroll="no"
     />
@@ -45,42 +45,45 @@ exit /b
         }
         .header {
             background-color: #0078d4;
-            padding: 24px 20px;
+            padding: 22px 20px;
             text-align: center;
         }
         .header h1 {
-            font-size: 28px;
-            margin: 0 0 4px 0;
-            letter-spacing: 6px;
+            font-size: 26px;
+            margin: 0 0 3px 0;
+            letter-spacing: 5px;
             font-weight: 300;
             color: #fff;
         }
         .header p {
             margin: 0;
-            font-size: 11px;
-            color: #b0d4f1;
+            font-size: 10px;
+            color: #a8d4f5;
         }
         .content {
-            padding: 18px 22px;
+            padding: 16px 20px;
+            overflow-y: auto;
+            max-height: 380px; /* Leave space for header and footer */
+            padding-bottom: 60px; /* Prevent content from being hidden behind footer */
         }
         .footer {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 12px 22px;
+            padding: 10px 20px;
             background-color: #f3f3f3;
             border-top: 1px solid #ddd;
             text-align: right;
         }
         .btn {
-            padding: 9px 24px;
-            font-size: 13px;
+            padding: 8px 22px;
+            font-size: 12px;
             border-radius: 2px;
             cursor: pointer;
-            border: 1px solid #aaa;
+            border: 1px solid #999;
             background-color: #eee;
-            margin-left: 8px;
+            margin-left: 6px;
         }
         .btn-primary {
             background-color: #0078d4;
@@ -88,77 +91,75 @@ exit /b
             border-color: #0078d4;
         }
         .btn-hidden { display: none; }
-        .status-box {
+        .log-box {
             font-family: Consolas, monospace;
-            font-size: 10px;
+            font-size: 9px;
             background-color: #1a1a1a;
-            color: #aaa;
-            padding: 8px;
-            height: 70px;
+            color: #999;
+            padding: 6px;
+            height: 55px;
             overflow-y: auto;
             border: 1px solid #333;
-            margin-top: 10px;
+            margin-top: 8px;
         }
         .hidden { display: none; }
-        .mode-btn {
-            text-align: left;
-            padding: 14px 16px;
+        .menu-item {
+            padding: 12px 14px;
             border: 1px solid #ddd;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             cursor: pointer;
             background-color: #fafafa;
         }
-        .mode-btn-danger { border-color: #e8c0c0; }
-        .mode-title { font-weight: bold; font-size: 13px; display: block; margin-bottom: 2px; color: #222; }
-        .mode-title-danger { color: #b00; }
-        .mode-desc { font-size: 10px; color: #666; }
-        .success-text { color: #060; }
-        .error-text { color: #900; }
+        .menu-item:hover { background-color: #f0f7ff; border-color: #0078d4; }
+        .menu-danger { border-color: #e8c0c0; }
+        .menu-danger:hover { background-color: #fff5f5; border-color: #c00; }
+        .menu-title { font-weight: bold; font-size: 12px; display: block; margin-bottom: 1px; color: #222; }
+        .menu-title-danger { color: #a00; }
+        .menu-desc { font-size: 9px; color: #666; }
+        .ok { color: #080; }
+        .err { color: #800; }
 
-        .progress-wrap {
+        .prog-wrap {
             background-color: #ddd;
-            height: 18px;
-            margin: 10px 0;
+            height: 16px;
+            margin: 8px 0;
             border: 1px solid #bbb;
-            position: relative;
-            overflow: hidden;
         }
-        .progress-fill {
+        .prog-bar {
             background-color: #0078d4;
             height: 100%;
             width: 0%;
-            transition: width 0.3s;
         }
-        .progress-label {
+        .prog-text {
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             color: #555;
-            margin-top: 3px;
+            margin-top: 2px;
         }
     </style>
 </head>
 <body onload="init()">
-    <div id="step-action">
+    <div id="view-menu">
         <div class="header">
             <h1>FLUX</h1>
             <p>Spotify Overlay by R1G3L</p>
         </div>
         <div class="content">
-            <div id="option-install" class="mode-btn" onclick="startProcess('install')" style="display:none;">
-                <span class="mode-title">Get Started</span>
-                <span class="mode-desc">Download FLUX and configure Spotify integration.</span>
+            <div id="opt-install" class="menu-item" onclick="run('install')" style="display:none;">
+                <span class="menu-title">Get Started</span>
+                <span class="menu-desc">Download and configure FLUX.</span>
             </div>
-            <div id="option-update" class="mode-btn" onclick="startProcess('update')" style="display:none;">
-                <span class="mode-title">Update FLUX</span>
-                <span class="mode-desc">Update to the latest version.</span>
+            <div id="opt-update" class="menu-item" onclick="run('update')" style="display:none;">
+                <span class="menu-title">Update FLUX</span>
+                <span class="menu-desc">Download the latest version.</span>
             </div>
-            <div id="option-setup" class="mode-btn" onclick="startProcess('setup')" style="display:none;">
-                <span class="mode-title">Repair Integration</span>
-                <span class="mode-desc">Re-configure Spotify integration only.</span>
+            <div id="opt-repair" class="menu-item" onclick="run('repair')" style="display:none;">
+                <span class="menu-title">Repair</span>
+                <span class="menu-desc">Re-apply Spotify integration.</span>
             </div>
-            <div id="option-uninstall" class="mode-btn mode-btn-danger" onclick="startProcess('uninstall')">
-                <span class="mode-title mode-title-danger">Uninstall</span>
-                <span class="mode-desc">Remove FLUX and clean up files.</span>
+            <div id="opt-remove" class="menu-item menu-danger" onclick="run('remove')">
+                <span class="menu-title menu-title-danger">Uninstall</span>
+                <span class="menu-desc">Remove FLUX completely.</span>
             </div>
         </div>
         <div class="footer">
@@ -166,18 +167,18 @@ exit /b
         </div>
     </div>
 
-    <div id="step-progress" class="hidden">
+    <div id="view-progress" class="hidden">
         <div class="header">
             <h1>FLUX</h1>
-            <p id="progressSubtitle">Processing...</p>
+            <p id="sub">Working...</p>
         </div>
         <div class="content">
-            <div id="statusText" style="font-size: 13px; font-weight: bold; margin-bottom: 6px;">Initializing...</div>
-            <div class="progress-wrap">
-                <div class="progress-fill" id="progressBar"></div>
+            <div id="status" style="font-size: 12px; font-weight: bold; margin-bottom: 4px;">Starting...</div>
+            <div class="prog-wrap">
+                <div class="prog-bar" id="bar"></div>
             </div>
-            <div class="progress-label" id="progressPercent">0%</div>
-            <div id="statusBox" class="status-box"></div>
+            <div class="prog-text" id="pct">0%</div>
+            <div id="logbox" class="log-box"></div>
         </div>
         <div class="footer">
             <button class="btn btn-primary btn-hidden" id="btnDone" onclick="closeApp()">Done</button>
@@ -185,163 +186,163 @@ exit /b
     </div>
 
     <script type="text/javascript">
-        var shell = new ActiveXObject("WScript.Shell");
+        var sh = new ActiveXObject("WScript.Shell");
         var fso = new ActiveXObject("Scripting.FileSystemObject");
-        var exeName = "FLUX.exe";
-        var repoUrl = "https://github.com/h1r7/spotify-overlay/releases/latest/download/FLUX.exe";
-        var downloadTimer = null;
+        var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+        var stream = new ActiveXObject("ADODB.Stream");
+        var exe = "FLUX.exe";
+        var url = "https://github.com/h1r7/spotify-overlay/releases/latest/download/FLUX.exe";
+        var expectedSize = 130000000; // ~130MB fallback
 
         function init() {
-            window.resizeTo(460, 420);
-            var x = (screen.width - 460) / 2;
-            var y = (screen.height - 420) / 2;
-            window.moveTo(x, y);
-            checkPresence();
+            window.resizeTo(420, 500);
+            window.moveTo((screen.width - 420) / 2, (screen.height - 500) / 2);
+            refresh();
         }
 
-        function checkPresence() {
-            var exists = fso.FileExists(exeName);
-            document.getElementById('option-install').style.display = exists ? "none" : "block";
-            document.getElementById('option-update').style.display = exists ? "block" : "none";
-            document.getElementById('option-setup').style.display = exists ? "block" : "none";
+        function refresh() {
+            var exists = fso.FileExists(exe);
+            document.getElementById('opt-install').style.display = exists ? "none" : "block";
+            document.getElementById('opt-update').style.display = exists ? "block" : "none";
+            document.getElementById('opt-repair').style.display = exists ? "block" : "none";
         }
 
-        function showStep(id) {
-            document.getElementById('step-action').style.display = "none";
-            document.getElementById('step-progress').style.display = "none";
+        function show(id) {
+            document.getElementById('view-menu').style.display = "none";
+            document.getElementById('view-progress').style.display = "none";
             document.getElementById(id).style.display = "block";
         }
 
-        function setProgress(percent, text) {
-            document.getElementById('progressBar').style.width = percent + "%";
-            document.getElementById('progressPercent').innerText = percent + "%";
-            if (text) document.getElementById('statusText').innerText = text;
+        function prog(p, t) {
+            document.getElementById('bar').style.width = p + "%";
+            document.getElementById('pct').innerText = p + "%";
+            if (t) document.getElementById('status').innerText = t;
         }
 
-        function animateDownload(startPct, endPct, callback) {
-            var current = startPct;
-            downloadTimer = window.setInterval(function() {
-                if (current < endPct) {
-                    current += 1;
-                    setProgress(current, "Downloading from GitHub...");
-                }
-            }, 150);
-            
-            // Actual download in background
-            var psScript = "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '" + repoUrl + "' -OutFile '" + exeName + "' -ErrorAction Stop; exit 0 } catch { exit 1 }";
-            var ret = shell.Run("powershell -Command \"" + psScript + "\"", 0, true);
-            
-            window.clearInterval(downloadTimer);
-            callback(ret === 0);
+        function log(m, c) {
+            var b = document.getElementById('logbox');
+            var s = document.createElement('span');
+            if (c) s.className = c;
+            s.innerText = m;
+            b.appendChild(s);
+            b.appendChild(document.createElement('br'));
+            b.scrollTop = b.scrollHeight;
         }
 
-        function log(msg, type) {
-            var box = document.getElementById('statusBox');
-            var span = document.createElement('span');
-            if (type === 'success') span.className = 'success-text';
-            else if (type === 'error') span.className = 'error-text';
-            span.innerText = msg;
-            box.appendChild(span);
-            box.appendChild(document.createElement('br'));
-            box.scrollTop = box.scrollHeight;
+        function done() {
+            document.getElementById('btnDone').className = "btn btn-primary";
         }
 
         function closeApp() { window.close(); }
 
-        function showDoneButton() {
-            document.getElementById('btnDone').className = "btn btn-primary";
-        }
+        function run(mode) {
+            show('view-progress');
+            var titles = { install: 'Installing...', update: 'Updating...', repair: 'Repairing...', remove: 'Removing...' };
+            document.getElementById('sub').innerText = titles[mode];
+            document.getElementById('logbox').innerHTML = "";
+            prog(0, "Starting...");
 
-        function startProcess(mode) {
-            showStep('step-progress');
-            var subtitles = { 'install': 'Installing...', 'update': 'Updating...', 'setup': 'Configuring...', 'uninstall': 'Uninstalling...' };
-            document.getElementById('progressSubtitle').innerText = subtitles[mode];
-            setProgress(0, "Starting...");
-            document.getElementById('statusBox').innerHTML = "";
-            
             window.setTimeout(function() {
-                if (mode === 'install' || mode === 'update') runInstallUpdate(mode);
-                else if (mode === 'setup') runOnlySetup();
-                else runUninstall();
-            }, 200);
+                if (mode === 'install' || mode === 'update') doDownload(mode);
+                else if (mode === 'repair') doRepair();
+                else doRemove();
+            }, 100);
         }
 
-        function runInstallUpdate(mode) {
-            log("[1/3] Preparing " + (mode === 'update' ? "update" : "installation") + "...");
-            setProgress(5, "Preparing...");
+        function doDownload(mode) {
+            log("[1/3] Preparing...");
+            prog(2, "Preparing...");
 
             if (mode === 'update') {
-                shell.Run("taskkill /F /IM " + exeName, 0, true);
-                if (fso.FileExists(exeName + ".old")) fso.DeleteFile(exeName + ".old");
-                if (fso.FileExists(exeName)) fso.MoveFile(exeName, exeName + ".old");
-                log(" - Backed up existing file.");
+                sh.Run("taskkill /F /IM " + exe, 0, true);
+                if (fso.FileExists(exe + ".bak")) fso.DeleteFile(exe + ".bak");
+                if (fso.FileExists(exe)) fso.MoveFile(exe, exe + ".bak");
+                log(" - Backed up old file.");
             }
-            
-            log("[2/3] Downloading FLUX.exe...");
-            
-            animateDownload(10, 55, function(success) {
-                if (!success) {
-                    setProgress(100, "Download Failed!");
-                    log("[Error] Could not download from GitHub.", "error");
-                    if (fso.FileExists(exeName + ".old")) fso.MoveFile(exeName + ".old", exeName);
-                    showDoneButton();
-                    return;
+
+            log("[2/3] Downloading from GitHub...");
+            prog(5, "Connecting to GitHub...");
+
+            try {
+                xhr.open("GET", url, false);
+                xhr.send();
+                
+                if (xhr.status !== 200) {
+                    throw new Error("HTTP " + xhr.status);
                 }
+
+                prog(10, "Downloading...");
                 
-                setProgress(60, "Download complete!");
-                log(" - Download successful.");
+                var total = expectedSize;
+                try {
+                    var cl = xhr.getResponseHeader("Content-Length");
+                    if (cl) total = parseInt(cl, 10);
+                } catch(e) {}
 
-                setProgress(70, "Configuring Spicetify...");
-                log("[3/3] Running Spicetify integration...");
-                shell.Run(exeName + " --install", 0, true);
-                
-                if (fso.FileExists(exeName + ".old")) fso.DeleteFile(exeName + ".old");
+                stream.Type = 1;
+                stream.Open();
+                stream.Write(xhr.responseBody);
+                stream.SaveToFile(exe, 2);
+                stream.Close();
 
-                setProgress(100, "Installation Complete!");
-                log("");
-                log("FLUX is ready to use!", "success");
-                showDoneButton();
-            });
-        }
-
-        function runOnlySetup() {
-            setProgress(30, "Re-configuring integration...");
-            log("[1/1] Running Spicetify setup...");
-            var ret = shell.Run(exeName + " --install", 0, true);
-            if (ret === 0) {
-                setProgress(100, "Configuration Complete!");
-                log(" - Applied successfully.", "success");
-            } else {
-                setProgress(100, "Setup Failed");
-                log("[Error] Check Spicetify installation.", "error");
+                var actualSize = fso.GetFile(exe).Size;
+                var pct = Math.min(Math.round((actualSize / total) * 50) + 10, 60);
+                prog(pct, "Download complete!");
+                log(" - Downloaded " + Math.round(actualSize / 1024 / 1024) + " MB.");
+            } catch(e) {
+                prog(100, "Download Failed!");
+                log("[Error] " + e.message, "err");
+                if (fso.FileExists(exe + ".bak")) fso.MoveFile(exe + ".bak", exe);
+                done();
+                return;
             }
-            showDoneButton();
-        }
 
-        function runUninstall() {
-            setProgress(15, "Stopping processes...");
-            log("[1/3] Terminating FLUX.exe...");
-            shell.Run("taskkill /F /IM " + exeName, 0, true);
-            
-            setProgress(45, "Cleaning up files...");
-            log("[2/3] Removing Spicetify extension...");
-            var appData = shell.ExpandEnvironmentStrings("%APPDATA%");
-            var extPath = appData + "\\spicetify\\Extensions\\obs-bridge.js";
-            if (fso.FileExists(extPath)) {
-                fso.DeleteFile(extPath);
-                log(" - Removed: obs-bridge.js");
+            if (fso.FileExists(exe + ".bak")) {
+                try { fso.DeleteFile(exe + ".bak"); } catch(e) {}
             }
-            shell.Run("powershell -Command \"spicetify config extensions obs-bridge.js-; spicetify apply\"", 0, true);
 
-            setProgress(80, "Deleting executable...");
-            log("[3/3] Removing FLUX.exe...");
-            if (fso.FileExists(exeName)) fso.DeleteFile(exeName);
-            log(" - Removed: " + exeName);
+            prog(70, "Configuring Spicetify...");
+            log("[3/3] Applying integration...");
+            sh.Run(exe + " --install", 0, true);
 
-            setProgress(100, "Uninstall Complete!");
+            prog(100, "Complete!");
             log("");
-            log("All files removed.", "success");
-            showDoneButton();
+            log("FLUX is ready!", "ok");
+            done();
+        }
+
+        function doRepair() {
+            prog(30, "Re-configuring...");
+            log("[1/1] Running Spicetify setup...");
+            sh.Run(exe + " --install", 0, true);
+            prog(100, "Repair Complete!");
+            log(" - Done.", "ok");
+            done();
+        }
+
+        function doRemove() {
+            prog(10, "Stopping...");
+            log("[1/3] Stopping FLUX...");
+            sh.Run("taskkill /F /IM " + exe, 0, true);
+
+            prog(40, "Cleaning...");
+            log("[2/3] Removing extension...");
+            var ext = sh.ExpandEnvironmentStrings("%APPDATA%") + "\\spicetify\\Extensions\\obs-bridge.js";
+            if (fso.FileExists(ext)) {
+                fso.DeleteFile(ext);
+                log(" - Removed obs-bridge.js");
+            }
+            sh.Run("powershell -Command \"spicetify config extensions obs-bridge.js-; spicetify apply\"", 0, true);
+
+            prog(80, "Deleting...");
+            log("[3/3] Deleting executable...");
+            if (fso.FileExists(exe)) fso.DeleteFile(exe);
+            log(" - Removed " + exe);
+
+            prog(100, "Uninstalled!");
+            log("");
+            log("All files removed.", "ok");
+            done();
         }
     </script>
 </body>
