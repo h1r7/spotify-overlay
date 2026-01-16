@@ -42,28 +42,29 @@ The fastest and easiest way to install.
 1. **Prerequisites**: Node.js 18+, [Spicetify](https://spicetify.app/) installed.
 2. **Clone**: `git clone https://github.com/h1r7/spotify-overlay.git`
 3. **Install Dependencies**: `npm install`
-4. **Run**: `npm run dev` (Development) or `npm run deploy` (Create distribution files)
+4. **Run**: `npm run dev` (Development) or `npm run build && npm start` (Production)
+5. **Overlay URL**: Open `http://localhost:6974` in your browser.
 
-## 📦 Deployment Guide (For Developers)
+## 🏗 Local Build & Run
 
-How to create a release build:
+If you want to modify the source code and run it locally:
 
-### 1. Create Build
+### ⚙️ Development Mode
+Best for making real-time changes to the UI or logic.
 ```bash
-npm run deploy
+npm run dev
 ```
-This command builds the project and creates distribution files in the `dist` folder.
 
-### 2. Deployment Package
-You only need to distribute the **`FLUX-setup.bat`** file generated in the `dist` folder.
+### 🚀 Production Mode
+Best for daily use after you've finished your modifications. It provides better performance and stability.
+```bash
+# 1. Build the project
+npm run build
 
-### 3. Create GitHub Release (Required)
-`FLUX-setup.bat` downloads the executable from GitHub Releases, so the following steps are mandatory:
-1. Create a new Release in your GitHub repository (`h1r7/spotify-overlay`).
-2. Upload `dist/FLUX.exe` to the Release **Assets**.
-   - **Note:** The uploaded filename MUST be `FLUX.exe`.
-
-Now users can simply run `FLUX-setup.bat` to automatically download the latest `FLUX.exe` and install/update.
+# 2. Start the server
+npm start
+```
+Once started, you can access the dashboard at `http://localhost:6974/dashboard` to configure your overlay.
 
 ## 📁 Project Structure
 
