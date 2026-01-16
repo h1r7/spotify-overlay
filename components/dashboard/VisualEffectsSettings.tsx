@@ -1,21 +1,21 @@
 "use client"
 
-interface PremiumEffectsSettingsProps {
+interface VisualEffectsSettingsProps {
     draftInteractiveProgress: boolean
     setDraftInteractiveProgress: (v: boolean) => void
     draftShowWrapVisualizer: boolean
     setDraftShowWrapVisualizer: (v: boolean) => void
 }
 
-export default function PremiumEffectsSettings({
+export default function VisualEffectsSettings({
     draftInteractiveProgress, setDraftInteractiveProgress,
     draftShowWrapVisualizer, setDraftShowWrapVisualizer
-}: PremiumEffectsSettingsProps) {
+}: VisualEffectsSettingsProps) {
     return (
-        <div className="bg-gradient-to-br from-indigo-900/40 to-zinc-900/50 p-6 rounded-2xl border border-indigo-500/20 space-y-6">
+        <div className="bg-gradient-to-br from-zinc-800/40 to-zinc-900/50 p-6 rounded-2xl border border-white/10 space-y-6">
             <div className="flex items-center gap-2">
-                <div className="w-2 h-6 bg-indigo-500 rounded-full" />
-                <h2 className="text-xl font-bold">프리미엄 효과</h2>
+                <div className="w-2 h-6 bg-blue-500 rounded-full" />
+                <h2 className="text-xl font-bold">시각 효과 설정</h2>
             </div>
 
             {/* Interactive Progress Bar Toggle */}

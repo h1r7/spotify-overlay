@@ -43,7 +43,8 @@ export function parseLrc(lrcString: string): LyricLine[] {
             let ms = parseInt(msStr);
             if (msStr.length === 2) ms *= 10;
             const time = (min * 60 * 1000) + (sec * 1000) + ms;
-            const words = match[4].trim();
+            // [Detail] 괄호 시작 전에 줄바꿈 추가 (가독성 향상)
+            const words = match[4].trim().replace(/ \(/g, '\n(').replace(/ \[/g, '\n[');
             if (words) lines.push({ time, words });
         }
     });
@@ -55,7 +56,7 @@ export function parseLrc(lrcString: string): LyricLine[] {
 export function parseSpotifyLyrics(spotifyLines: any[]): LyricLine[] {
     return spotifyLines.map((line: any) => ({
         time: Number(line.startTimeMs || 0),
-        words: line.words || ""
+        words: (line.words || "").replace(/ \(/g, '\n(').replace(/ \[/g, '\n[')
     }));
 }
 

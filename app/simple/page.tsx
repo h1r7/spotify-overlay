@@ -4,13 +4,14 @@ import { useState, useRef, useEffect } from "react"
 import { useSpotifyData } from "../../hooks/useSpotifyData"
 import SimpleWidget from "../../components/SimpleWidget"
 import { useSettings } from "../../context/SettingsContext"
+import DisconnectedNotice from "../../components/DisconnectedNotice"
 
 /**
  * 심플 위젯 전용 페이지 (/simple)
  * 방송 중 구석에 작게 띄워두는 용도입니다.
  */
 export default function SimplePage() {
-    const { data, serverSettings } = useSpotifyData()
+    const { data, serverSettings, isDisconnected } = useSpotifyData()
     const { updateSettings } = useSettings()
 
     const [showToast, setShowToast] = useState(false)
@@ -34,6 +35,7 @@ export default function SimplePage() {
 
     return (
         <div className="min-h-screen bg-transparent flex items-start p-8 relative">
+            {isDisconnected && <DisconnectedNotice />}
             {/* 설정 적용 알림 (좌측 상단, 연하게) */}
             {showToast && (
                 <div className="fixed top-4 left-4 z-[100] bg-white/5 backdrop-blur-md border border-white/10 text-white/40 px-3 py-1 rounded-full text-[10px] font-bold animate-in fade-in slide-in-from-left-2 duration-700">

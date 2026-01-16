@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   // CORS 설정: Spicetify가 데이터를 보낼 때 차단당하지 않도록 허용
   async headers() {
     return [

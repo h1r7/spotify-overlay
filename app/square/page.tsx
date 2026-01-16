@@ -4,12 +4,13 @@ import { useState, useRef, useEffect } from "react"
 import { useSpotifyData } from "../../hooks/useSpotifyData"
 import SquareWidget from "../../components/SquareWidget"
 import { useSettings } from "../../context/SettingsContext"
+import DisconnectedNotice from "../../components/DisconnectedNotice"
 
 /**
  * 정사각형 위젯 전용 페이지 (/square)
  */
 export default function SquarePage() {
-    const { data, serverSettings } = useSpotifyData()
+    const { data, serverSettings, isDisconnected } = useSpotifyData()
     const { updateSettings } = useSettings()
 
     const [showToast, setShowToast] = useState(false)
@@ -33,6 +34,7 @@ export default function SquarePage() {
 
     return (
         <div className="min-h-screen bg-transparent flex items-start p-8 relative">
+            {isDisconnected && <DisconnectedNotice />}
             {/* 설정 적용 알림 */}
             {showToast && (
                 <div className="fixed top-4 left-4 z-[100] bg-white/5 backdrop-blur-md border border-white/10 text-white/40 px-3 py-1 rounded-full text-[10px] font-bold animate-in fade-in slide-in-from-left-2 duration-700">

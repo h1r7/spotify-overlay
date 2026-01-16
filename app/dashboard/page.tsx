@@ -9,10 +9,11 @@ import StatusPanel from "../../components/dashboard/StatusPanel"
 import WidgetSettings from "../../components/dashboard/WidgetSettings"
 import LyricsSettings from "../../components/dashboard/LyricsSettings"
 import PageBackgroundSettings from "../../components/dashboard/PageBackgroundSettings"
-import PremiumEffectsSettings from "../../components/dashboard/PremiumEffectsSettings"
+import VisualEffectsSettings from "../../components/dashboard/VisualEffectsSettings"
+import DisconnectedNotice from "../../components/DisconnectedNotice"
 
 export default function DashboardPage() {
-    const { data, serverSettings } = useSpotifyData()
+    const { data, serverSettings, isDisconnected } = useSpotifyData()
     const { settings, updateSettings, resetSettings } = useSettings()
 
     // 서버에서 온 마지막 설정을 저장하여 중복 동기화 방지
@@ -20,17 +21,17 @@ export default function DashboardPage() {
 
     // 로컬 상태 (즉시 적용 방지용 Draft)
     const [draftWidgetStyle, setDraftWidgetStyle] = useState<'album' | 'custom'>('album')
-    const [draftLyricsStyle, setDraftLyricsStyle] = useState<'album' | 'custom'>('custom')
-    const [draftAnimationStyle, setDraftAnimationStyle] = useState<'default' | 'fade'>('default')
+    const [draftLyricsStyle, setDraftLyricsStyle] = useState<'album' | 'custom'>('album')
+    const [draftAnimationStyle, setDraftAnimationStyle] = useState<'default' | 'fade'>('fade')
     const [draftWidgetBg, setDraftWidgetBg] = useState('#18181b')
     const [draftLyricsBg, setDraftLyricsBg] = useState('#000000')
     const [draftSimpleWidgetBg, setDraftSimpleWidgetBg] = useState('#18181b')
     const [draftSquareWidgetBg, setDraftSquareWidgetBg] = useState('#18181b')
 
     // 추가 기능 Draft
-    const [draftPageBgStyle, setDraftPageBgStyle] = useState<'album' | 'custom'>('custom')
+    const [draftPageBgStyle, setDraftPageBgStyle] = useState<'album' | 'custom'>('album')
     const [draftPageBgColor, setDraftPageBgColor] = useState('#000000')
-    const [draftLyricsBounce, setDraftLyricsBounce] = useState(false)
+    const [draftLyricsBounce, setDraftLyricsBounce] = useState(true)
     const [draftLyricsBounceAmount, setDraftLyricsBounceAmount] = useState(5)
     const [draftSimpleWidgetStyle, setDraftSimpleWidgetStyle] = useState<'album' | 'custom'>('album')
     const [draftSquareWidgetStyle, setDraftSquareWidgetStyle] = useState<'album' | 'custom'>('album')
@@ -113,6 +114,7 @@ export default function DashboardPage() {
 
     return (
         <div className="min-h-screen bg-zinc-950 text-white p-8 font-sans relative">
+            {isDisconnected && <DisconnectedNotice />}
             {/* Toast Notification */}
             {showToast && (
                 <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-green-600 text-white px-8 py-3 rounded-full shadow-2xl font-bold animate-in fade-in slide-in-from-top-4 duration-500">
@@ -138,6 +140,18 @@ export default function DashboardPage() {
                     <a href="/simple" target="_blank" className="px-4 py-2 bg-green-600/20 text-green-400 border border-green-600/30 rounded-lg hover:bg-green-600/30 transition font-bold">심플 위젯</a>
                     <a href="/square" target="_blank" className="px-4 py-2 bg-purple-600/20 text-purple-400 border border-purple-600/30 rounded-lg hover:bg-purple-600/30 transition font-bold">정사각형</a>
                     <a href="/full" target="_blank" className="px-4 py-2 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-600/30 transition font-bold">전체 화면</a>
+                    <div className="w-px h-8 bg-zinc-800 mx-1" />
+                    <button
+                        onClick={async () => {
+                            if (confirm('R1G3L-Flux 프로그램을 정말 종료하시겠습니까?')) {
+                                await fetch('/api/shutdown', { method: 'POST' });
+                                window.close();
+                            }
+                        }}
+                        className="px-4 py-2 bg-red-600/20 text-red-500 border border-red-600/30 rounded-lg hover:bg-red-600/40 transition font-bold"
+                    >
+                        종료
+                    </button>
                 </div>
             </header>
 
@@ -176,7 +190,7 @@ export default function DashboardPage() {
                     setDraftLyricsOffset={setDraftLyricsOffset}
                 />
 
-                {/* Row 2: Page Background & Premium Effects */}
+                {/* Row 2: Page Background & Visual Effects */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8">
                     <PageBackgroundSettings
                         draftPageBgStyle={draftPageBgStyle}
@@ -185,7 +199,7 @@ export default function DashboardPage() {
                         setDraftPageBgColor={setDraftPageBgColor}
                     />
 
-                    <PremiumEffectsSettings
+                    <VisualEffectsSettings
                         draftInteractiveProgress={draftInteractiveProgress}
                         setDraftInteractiveProgress={setDraftInteractiveProgress}
                         draftShowWrapVisualizer={draftShowWrapVisualizer}

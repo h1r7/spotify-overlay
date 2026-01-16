@@ -9,10 +9,14 @@ import fs from 'fs';
 import path from 'path';
 
 // --- 설정 파일 경로 ---
-const SETTINGS_FILE = path.join(process.cwd(), 'data', 'state.json');
+const SETTINGS_DIR = path.join(process.cwd(), 'data');
+const SETTINGS_FILE = path.join(SETTINGS_DIR, 'state.json');
 
 function saveSettings(settings: any) {
     try {
+        if (!fs.existsSync(SETTINGS_DIR)) {
+            fs.mkdirSync(SETTINGS_DIR, { recursive: true });
+        }
         fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
     } catch (e) {
         console.error("Failed to save settings to file", e);
@@ -34,14 +38,18 @@ function loadSettings() {
 // --- 기본 설정 ---
 const DEFAULT_SETTINGS = {
     widgetStyle: 'album',
-    lyricsStyle: 'custom',
-    animationStyle: 'default',
+    lyricsStyle: 'album',
+    animationStyle: 'fade',
+    pageBackgroundStyle: 'album',
+    lyricsBounceEffect: true,
+    lyricsBounceAmount: 5,
     customColors: {
         widgetBg: '#18181b',
         lyricsBg: '#000000',
         simpleWidgetBg: '#18181b'
     },
     simpleWidgetStyle: 'album',
+    squareWidgetStyle: 'album',
     lyricsOffset: 0,
     showWrapVisualizer: true,
     interactiveProgress: false
@@ -235,28 +243,31 @@ export async function POST(request: Request) {
             return handleSettingsUpdate(newData.settings);
         }
 
-        // Spicetify 페이로드에 settings 필드가 포함된 경우 경고
-        if ((newData.title || newData.artist) && 'settings' in newData) {
-            console.log("⚠️ Spicetify/Bridge Payload에 settings 필드가 포함됨! (무시됨)");
-        }
-
         const currentTrackId = newData.trackId || `${newData.title} - ${newData.artist}`;
         const networkDelay = calculateNetworkDelay(newData.clientTimestamp, receivedTimestamp);
 
+        // Progress 값 추출
+        const rawProgress = Number(newData.progress);
+        const nextProgress = isNaN(rawProgress) ? 0 : rawProgress;
+
         // 새 노래 vs 기존 노래
         if (currentTrackId !== lastSearchedTrackId) {
-            // [Fix] 가사 검색이 응답을 블로킹하지 않도록 비동기 처리 (await 제거)
-            // 단, 기본적인 메타데이터 업데이트는 보장해야 하므로 handleNewTrack 내부에서 처리 분리
+            // [Fix] 새 노래인 경우 진행률도 0으로 초기화하거나 전달된 값 사용
+            newData.progress = nextProgress;
             handleNewTrack(newData, currentTrackId, receivedTimestamp, networkDelay).catch(err => {
                 console.error("Async track processing error:", err);
             });
         } else {
+            // [Fix] 같은 곡인데 갑자기 진행률이 0으로 점프하는 비정상 데이터 필터링
+            // (Spicetify가 곡 중간에 잠깐 0을 보고하는 경우가 있음)
+            if (nextProgress === 0 && currentData.progress > 3000) {
+                // console.log("⚠️ 진행률 역주행(0) 방지");
+                newData.progress = currentData.progress; // 기존 값 유지
+            } else {
+                currentData.progress = nextProgress;
+            }
             handleExistingTrack(newData, currentTrackId, receivedTimestamp, networkDelay);
         }
-
-        // Progress 업데이트
-        const rawProgress = Number(newData.progress);
-        currentData.progress = isNaN(rawProgress) ? 0 : rawProgress;
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -266,5 +277,11 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-    return NextResponse.json(extrapolateProgress(currentData));
+    return NextResponse.json(extrapolateProgress(currentData), {
+        headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+        }
+    });
 }

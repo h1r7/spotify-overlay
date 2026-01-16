@@ -8,8 +8,11 @@ import GlobalBackground from "../components/GlobalBackground";
 const font = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Spotify Overlay",
-  description: "OBS Overlay",
+  title: "R1G3L-Flux | Spotify Overlay",
+  description: "Premium OBS Overlay for Spotify",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

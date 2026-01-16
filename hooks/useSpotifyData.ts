@@ -42,6 +42,7 @@ export function useSpotifyData() {
     const [isMounted, setIsMounted] = useState(false)
     const [debugSpeed, setDebugSpeed] = useState(1.0)
     const [serverSettings, setServerSettings] = useState<any>(null)
+    const [isDisconnected, setIsDisconnected] = useState(false)
 
     // Refs
     const lastUpdateTimestamp = useRef<number>(Date.now())
@@ -93,7 +94,7 @@ export function useSpotifyData() {
         const diff = compensatedProgress - currentExpected;
         const absDiff = Math.abs(diff);
 
-        // 앵커(시작점) 차이 계산
+        // [Stabilization] 앵커 차이 임계값 상향 (네트워크 지터 대응)
         const currentAnchor = lastUpdateTimestamp.current - progressAtUpdate.current;
         const newAnchor = now - compensatedProgress;
         const anchorDiff = Math.abs(currentAnchor - newAnchor);
@@ -111,8 +112,9 @@ export function useSpotifyData() {
             : (isSongChange ? [] : oldData.lyrics);
 
         // [Fix] 가사 상태 보존 (검색 중일 때 덮어쓰기 방지)
+        // [Update] 서버가 명시적으로 'not_found'를 보냈다면 즉시 반영하도록 수정
         const mergedStatus = (newData.lyricsStatus === 'not_found' && oldData.lyricsStatus === 'searching' && !isSongChange)
-            ? 'searching' // 서버가 잠깐 not_found 보내도 클라이언트가 아직 기다리는 중이면 유지 (필요 시 로직 조정)
+            ? 'not_found' // 강제로 searching으로 되돌리지 않고 서버의 최종 판단을 따름
             : newData.lyricsStatus || oldData.lyricsStatus;
 
         const mergedData = { ...newData, lyrics: mergedLyrics, lyricsStatus: mergedStatus };
@@ -127,12 +129,13 @@ export function useSpotifyData() {
         const jumpThreshold = (isSongChange || isNearStart) ? 100 : 800;
 
         // [Fix] 조건 단순화: 1초 이상 앵커 차이나거나, 실제 오차가 임계값 넘으면 무조건 점프
+        // Threshold를 800 -> 1200으로 상향하여 잦은 점프 방지
         const shouldHardJump =
             isSongChange ||
             stateChanged ||
             !newData.isPlaying ||
-            anchorDiff >= 1000 ||
-            absDiff > jumpThreshold;
+            anchorDiff >= 3000 ||
+            absDiff > 1200;
 
         if (shouldHardJump) {
             // console.log(`[Jump] Diff: ${Math.round(diff)}ms, AnchorDiff: ${Math.round(anchorDiff)}ms`);
@@ -170,11 +173,23 @@ export function useSpotifyData() {
     useEffect(() => {
         if (!isMounted) return
         const eventSource = new EventSource('/events')
+        eventSource.onopen = () => setIsDisconnected(false)
         eventSource.onmessage = (e) => {
-            try { processUpdate(JSON.parse(e.data), true) }
+            try {
+                setIsDisconnected(false);
+                processUpdate(JSON.parse(e.data), true);
+            }
             catch (err) { console.error(err) }
         }
-        eventSource.onerror = () => eventSource.close()
+        eventSource.onerror = () => {
+            setIsDisconnected(true);
+            eventSource.close();
+            // 재연결 시도 (5초 후)
+            setTimeout(() => {
+                if (isMounted) setIsMounted(false);
+                setTimeout(() => setIsMounted(true), 100);
+            }, 5000);
+        }
         return () => eventSource.close()
     }, [isMounted])
 
@@ -231,5 +246,5 @@ export function useSpotifyData() {
         return () => cancelAnimationFrame(animationFrameRef.current);
     }, [data.isPlaying, data.duration]);
 
-    return { data, currentProgress, debugSpeed, serverSettings }
+    return { data, currentProgress, debugSpeed, serverSettings, isDisconnected }
 }

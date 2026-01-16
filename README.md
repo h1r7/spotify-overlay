@@ -56,7 +56,28 @@ npm start
 
 Spotify와 연동하려면 Spicetify 확장을 설치해야 합니다.
 
-👉 **[Spicetify 설정 가이드](./docs/spicetify-setup.md)**
+ 👉 **[Spicetify 설정 가이드](./docs/spicetify-setup.md)**
+
+## 📦 배포 가이드 (개발자용)
+
+소스 코드를 수정하고 배포 버전을 생성하는 방법입니다.
+
+### 1. 배포 빌드 생성
+```bash
+npm run deploy
+```
+이 명령어를 실행하면 `build` 과정을 거쳐 `dist` 폴더에 배포 파일이 생성됩니다.
+
+### 2. 배포 패키지 구성
+`dist` 폴더 안에 생성된 **`FLUX-setup.bat`** 파일 하나만 배포하면 됩니다.
+
+### 3. GitHub Release 등록 (필수)
+`FLUX-setup.bat`은 GitHub Releases에서 실행 파일을 다운로드하므로, 다음 과정이 필수입니다:
+1. GitHub 저장소(`h1r7/spotify-overlay`)에 새로운 Release를 생성합니다.
+2. `dist/FLUX.exe` 파일을 Release의 **Assets**에 업로드합니다.
+   - **주의:** 업로드되는 파일명은 반드시 `FLUX.exe`여야 합니다.
+
+이제 사용자는 `FLUX-setup.bat`만 실행하면 자동으로 최신 `FLUX.exe`를 다운로드하고 설치/업데이트를 진행할 수 있습니다.
 
 ## 📁 프로젝트 구조
 

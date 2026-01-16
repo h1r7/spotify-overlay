@@ -5,13 +5,14 @@ import { useSpotifyData } from "../../hooks/useSpotifyData"
 import SongInfoWidget from "../../components/SongInfoWidget"
 import LyricsWidget from "../../components/LyricsWidget"
 import { useSettings } from "../../context/SettingsContext"
+import DisconnectedNotice from "../../components/DisconnectedNotice"
 
 /**
  * 풀 위젯 페이지 (가장 완성도 높은 전체 구성)
  * Song Info + Lyrics + Chat Box Placeholder
  */
 export default function FullPage() {
-    const { data, currentProgress, debugSpeed, serverSettings } = useSpotifyData()
+    const { data, currentProgress, debugSpeed, serverSettings, isDisconnected } = useSpotifyData()
     const { updateSettings } = useSettings()
 
     const [showToast, setShowToast] = useState(false)
@@ -35,6 +36,9 @@ export default function FullPage() {
 
     return (
         <div className="min-h-screen bg-transparent flex items-center justify-center p-8 font-sans overflow-hidden relative">
+            {/* Server Disconnected Notice */}
+            {isDisconnected && <DisconnectedNotice />}
+
             {/* 설정 적용 알림 (좌측 상단, 연하게) */}
             {showToast && (
                 <div className="fixed top-4 left-4 z-[100] bg-white/5 backdrop-blur-md border border-white/10 text-white/40 px-3 py-1 rounded-full text-[10px] font-bold animate-in fade-in slide-in-from-left-2 duration-700">
