@@ -64,6 +64,13 @@ function applyPatches() {
             return original;
         }
 
+        // D. Mock Next.js dev-only modules
+        if (id.includes('router-utils/setup-dev-bundler')) {
+            return {
+                setupDevBundler: () => Promise.resolve()
+            };
+        }
+
         return originalRequire.apply(this, arguments);
     };
 

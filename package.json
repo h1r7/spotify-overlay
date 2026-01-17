@@ -8,11 +8,10 @@
     "dev": "next dev -p 6974",
     "lint": "eslint .",
     "start": "next start -p 6974",
-    "make-exe": "xcopy public .next\\standalone\\public /E /I /Y && xcopy .next\\static .next\\standalone\\.next\\static /E /I /Y && pkg . --compress GZip --output dist/FLUX.exe --icon launcher/icon.ico",
+    "make-exe": "xcopy public .next\\standalone\\public /E /I /Y && xcopy .next\\static .next\\standalone\\.next\\static /E /I /Y && powershell -ExecutionPolicy Bypass -File build.ps1",
     "deploy": "npm run build && npm run make-exe && copy FLUX-setup.bat dist\\FLUX-setup.bat"
   },
   "pkg": {
-    "scripts": "launcher/index.js",
     "assets": [
       ".next/standalone/**/*",
       "public/**/*",
